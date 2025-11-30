@@ -1,13 +1,17 @@
 const express = require('express');
 const cors = require('cors');
 const app = express();
+const fetch = require('node-fetch'); // Usamos require para node-fetch en Node.js
 
 // IMPORTANTE: Configuración de seguridad (CORS)
-// Esto permite que SOLO tu página de GitHub pueda usar este servidor.
-// Cambia esto si tu dominio es diferente en el futuro.
+// Esta lista SÓLO permite que tu dominio de GitHub Pages use este servidor.
 const allowedOrigins = [
-    'https://d4niel-api.github.io',
-    'http://localhost:3000' // Para pruebas locales
+    // Dominio base de GitHub Pages
+    'https://d4niel-api.github.io', 
+    // Dominio COMPLETO del proyecto (a veces necesario)
+    'https://d4niel-api.github.io/calculadora-honorarios-letrado-madrid',
+    // Para pruebas locales
+    'http://localhost:3000' 
 ];
 
 app.use(cors({
@@ -16,7 +20,9 @@ app.use(cors({
         if (!origin || allowedOrigins.indexOf(origin) !== -1) {
             callback(null, true);
         } else {
-            callback(new Error('Bloqueado por CORS: Origen no permitido'));
+            // Si el origen no está permitido, lo registramos para diagnóstico
+            console.log(`CORS Error: Origen no permitido - ${origin}`);
+            callback(new Error('Bloqueado por CORS: Origen no permitido'), false);
         }
     }
 }));
@@ -32,6 +38,7 @@ app.post('/api/chat', async (req, res) => {
         const API_KEY = process.env.GEMINI_API_KEY;
 
         if (!API_KEY) {
+            // Este error ya lo resolviste, pero lo dejamos por si acaso.
             console.error('Error: API Key no configurada');
             return res.status(500).json({ error: 'Configuración del servidor incompleta' });
         }
@@ -50,6 +57,7 @@ app.post('/api/chat', async (req, res) => {
 
         // Si Google devuelve error, lo enviamos al frontend
         if (!response.ok) {
+            console.error('Error de Google Gemini:', data);
             return res.status(response.status).json(data);
         }
 
@@ -57,7 +65,7 @@ app.post('/api/chat', async (req, res) => {
         res.json(data);
 
     } catch (error) {
-        console.error('Error en el servidor:', error);
+        console.error('Error interno del servidor en /api/chat:', error);
         res.status(500).json({ error: 'Error interno del servidor procesando la solicitud' });
     }
 });
@@ -67,7 +75,7 @@ app.get('/', (req, res) => {
     res.send('El servidor proxy para la Calculadora Legal está activo.');
 });
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 10000; // Usamos 10000 para forzar el puerto que detectó Render
 app.listen(PORT, () => {
     console.log(`Servidor corriendo en puerto ${PORT}`);
 });
