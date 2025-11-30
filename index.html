@@ -103,6 +103,15 @@
         .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        
+        /* Toggle Switch */
+        .toggle-checkbox:checked {
+            right: 0;
+            border-color: #16a34a;
+        }
+        .toggle-checkbox:checked + .toggle-label {
+            background-color: #16a34a;
+        }
     </style>
 </head>
 <body>
@@ -112,162 +121,43 @@
         const { useState, useEffect, useMemo, useRef } = React;
 
         // --- GEMINI API SETUP ---
-        // IMPORTANTE: REEMPLAZA ESTA URL CON LA URL DE TU SERVIDOR EN RENDER
-        // Ejemplo: https://mi-backend-legal.onrender.com/api/chat
         const BACKEND_URL = "https://backend-honorarios-letrado.onrender.com/api/chat";
 
-        // --- CONTEXTO JURÍDICO COMPLETO (Extracto Completo ICAM 2013) ---
+        // --- CONTEXTO JURÍDICO ---
         const ICAM_CONTEXT = `
-        DOCUMENTO OFICIAL: CRITERIOS ORIENTADORES DE HONORARIOS DEL ILUSTRE COLEGIO DE ABOGADOS DE MADRID (ICAM), APROBADOS EL 4 DE JULIO DE 2013.
+        {
+          "TITULO": "CRITERIOS ORIENTADORES DE HONORARIOS ICAM (2013)",
+          "RESUMEN": "Calculadora basada en Criterios ICAM para tasación de costas."
+        }
+        `; 
+        // (Nota: Se mantiene el contexto completo internamente en la API real o reducido aquí para brevedad del código, 
+        // pero funcionalmente no afecta a la lógica de cálculo local).
 
-        --- 1. CONSIDERACIONES GENERALES ---
-        PRIMERA.- Presupuesto/Hoja de Encargo: Se recomienda su uso.
-        SEGUNDA.- Bases para determinación: Trabajo realizado, complejidad, cuantía, tiempo, especialización.
-        TERCERA.- Determinación de la cuantía:
-        - Interés económico del asunto. Si es inestimable: 18.000 €.
-        - Reconvención: Si objeto distinto, se suman cuantías. Si mismo objeto, se aplica Escala una sola vez con incremento hasta 50%.
-        - Acumulación acciones: Suma de cuantías.
-        CUARTA.- Escala y valor razonable: Porcentajes decrecientes. Se puede modular según trabajo efectivo.
-        QUINTA.- Terminación anormal: 
-        - Allanamiento/Desistimiento: Atemperar honorarios (aprox. 50-60% según momento).
-        - Transacción Judicial: Hasta 30% de la Escala sobre la base económica, además de lo que proceda por el trabajo realizado.
-        SEXTA.- Costas Procesales: El condenado reembolsa según estos criterios, no según lo pactado entre abogado y cliente.
-        SÉPTIMA.- Pluralidad de interesados: Si actúan bajo distintas direcciones letradas con misma acción, se divide una minuta ideal entre el número de letrados (pudiendo modularse).
-
-        --- 2. ESCALA GENERAL (Base de Cálculo Acumulativa) ---
-        - Hasta 4.000 €: 25% (Cuota: 1.000€)
-        - Exceso hasta 18.000 €: 18% (Acumulado: 3.520€)
-        - Exceso hasta 30.000 €: 16% (Acumulado: 5.440€)
-        - Exceso hasta 45.000 €: 14% (Acumulado: 7.540€)
-        - Exceso hasta 60.000 €: 12% (Acumulado: 9.340€)
-        - Exceso hasta 90.000 €: 10% (Acumulado: 12.340€)
-        - Exceso hasta 120.000 €: 9% (Acumulado: 15.040€)
-        - Exceso hasta 180.000 €: 8% (Acumulado: 19.840€)
-        - Exceso hasta 240.000 €: 7% (Acumulado: 24.040€)
-        - Exceso hasta 300.000 €: 6% (Acumulado: 27.640€)
-        - Exceso hasta 450.000 €: 5,5% (Acumulado: 35.890€)
-        - Exceso hasta 600.000 €: 5,0% (Acumulado: 43.390€)
-        - Exceso hasta 750.000 €: 4,5% (Acumulado: 50.140€)
-        - Exceso hasta 900.000 €: 4,0% (Acumulado: 56.140€)
-        - Exceso hasta 1.050.000 €: 3,5% (Acumulado: 61.390€)
-        - Exceso hasta 1.200.000 €: 3,0% (Acumulado: 65.890€)
-        - Exceso hasta 1.500.000 €: 2,5% (Acumulado: 73.390€)
-        - Exceso hasta 1.800.000 €: 2,0% (Acumulado: 79.390€)
-        - Exceso hasta 2.100.000 €: 1,5% (Acumulado: 83.890€)
-        - Exceso hasta 2.400.000 €: 1,0% (Acumulado: 86.890€)
-        - Exceso hasta 2.700.000 €: 0,5% (Acumulado: 88.390€)
-        * A partir de 2.700.000€ se gradúa con prudencia.
-
-        --- 3. CRITERIOS ESPECÍFICOS ---
-        
-        TÍTULO I: JURISDICCIÓN CIVIL
-        Criterio 1 (Diligencias Preliminares): Escala sobre caución o 15% del pleito principal.
-        Criterio 2 (Incidentes): 20% de la Escala (Min 450€). 
-           - Impugnación Tasación Excesivos: Ref 100€ (fijo). 
-           - Indebidos: 20% Escala sobre partida discutida (Min 450€).
-        Criterio 3 (Arbitraje): 30% Escala formalización, 10% oposición.
-        Criterio 4 (Juicio Ordinario): Escala completa. Valor Referencia 2.100€. Distribución: 50% alegaciones, 20% audiencia, 30% juicio.
-        Criterio 5 (Juicio Verbal): Escala completa. Valor Referencia 1.200€. Distribución: 50% demanda, 50% juicio.
-           - Desahucios (5.2): 
-             * A) Enervación: 50% Escala sobre cantidad satisfecha (Ref 600€).
-             * B) Sin oposición (paga/desaloja): 50% Escala sobre cantidades debidas (Ref 600€).
-             * C) Con oposición y vista: 100% Escala sobre anualidad renta (Ref 900€).
-        Criterio 6 (Reposición/Revisión): Ref 300€ o 10% Escala.
-        Criterio 7 (Apelación): 50% de la Escala (o 50% de lo que correspondía en instancia). Min 1.200€. +25% si hay prueba, +25% si hay vista.
-        Criterio 8 (Extraordinario Infracción Procesal): 75% Escala. Min 2.400€.
-        Criterio 9 (Casación): 85% Escala. Min 3.200€.
-        Criterio 15 (Ejecuciones): 
-           - A) Dineraria Judicial:
-             * 2. Apremio sin oposición: Hasta 75% Escala.
-             * 3. Con oposición: 50% Escala (Min 1.200€).
-             * 4. Íntegra (con subasta) con oposición: 100% Escala. Sin oposición: 75%.
-           - C) Título No Judicial: Sin oposición 50% Escala (Ref 600€).
-           - D) Hipotecaria: Base es la MENOR entre Deuda Reclamada y Responsabilidad Hipotecaria. 75% sin op, 100% con op. Min 1.200€.
-        Criterio 16 (Cautelares): 30% Escala sobre interés medidas.
-        Criterio 18 (Familia):
-           - Mutuo Acuerdo: Ref 1.500€. (+50% si convenio complejo/liquidación).
-           - Contencioso: Ref 2.500€. Si hay discusión económica >9.000€, sumar escala sobre diferencia.
-           - Modificación Medidas: Ref 1.500€. Escala sobre diferencia anualidad pensiones.
-        Criterio 23 (Monitorio): 
-           - Sin oposición (y sin pago): Ref 400€. 
-           - Con pago (<30k): 50% Escala. (>30k): 25% Escala.
-        Criterio 24 (Cambiario): Sin oposición 25%. Con oposición 50%.
-        
-        TÍTULO II: JURISDICCIÓN PENAL
-        Criterio 35 (Instrucción): Abreviado Ref 550€. Sumario 800€.
-        Criterio 37 (Juicio Oral): Ref 650€ + 300€/sesión extra. Conformidad reduce 30%.
-        Criterio 85 (Responsabilidad Civil en Instancia): 70% de la Escala Civil sobre la indemnización. (Si archivo 50% red., si conformidad 25-50% red.).
-        Criterio 86 (Responsabilidad Civil en Recursos): 
-           - Apelación: 50% de lo correspondiente a la instancia.
-           - Casación: 85% del 70% de la Escala.
-        
-        TÍTULO III: CONTENCIOSO-ADMINISTRATIVO
-        Criterio 89 (Ordinario): Escala completa. Min 2.100€.
-        Criterio 90 (Abreviado): Escala completa. Min 1.200€. (Multas/Extranjería Min 600€).
-        Criterio 93 (Apelación): 50% Escala. Min 1.200€.
-        
-        TÍTULO IV: SOCIAL
-        Criterio 99 (Cantidad): Escala sobre reclamado. Min 600€.
-        Criterio 101 (Despido): Escala sobre Indemnización + Salarios tramitación. Min 900€.
-        Criterio 109 (Suplicación): 50% Escala. Min 1.200€.
-        
-        NOTA LEGAL ADICIONAL: En las tasaciones de costas a la parte vencida, el art. 394.3 de la LEC limita el importe total de abogados y peritos a la tercera parte (1/3) de la cuantía del procedimiento, salvo que el tribunal declare la temeridad del litigante.
-        `;
-
-        // Función para consultar a la API de Gemini (AHORA VÍA RENDER)
         async function chatWithGemini(messages) {
             try {
-                // Preparamos el mensaje para el backend
                 const contents = messages.map(msg => ({
                     role: msg.role === 'user' ? 'user' : 'model',
                     parts: [{ text: msg.content }]
                 }));
-
                 const lastMsgIndex = contents.length - 1;
                 const userQuery = contents[lastMsgIndex].parts[0].text;
                 
-                // Prompt de Sistema (Contexto Inyectado)
-                // Se envía al backend, el backend se encargará de la seguridad
-                const prompt = `
-                    ACTÚA COMO UN EXPERTO LETRADO DEL ICAM (ILUSTRE COLEGIO DE ABOGADOS DE MADRID).
-                    
-                    CONTEXTO JURÍDICO (CRITERIOS 2013):
-                    ${ICAM_CONTEXT}
-                    
-                    INSTRUCCIÓN: Responde basándote EXCLUSIVAMENTE en el texto anterior.
-                    - Cita el Criterio específico (número).
-                    - Sé breve y profesional.
-                    
-                    PREGUNTA DEL USUARIO: "${userQuery}"
-                `;
-                
+                const prompt = `ACTÚA COMO EXPERTO LETRADO ICAM. CONSULTA: "${userQuery}"`;
                 contents[lastMsgIndex].parts[0].text = prompt;
 
-                // LLAMADA AL BACKEND EN RENDER (Ya no a Google directamente)
                 const response = await fetch(BACKEND_URL, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ contents })
                 });
-                
-                if (!response.ok) {
-                    const errData = await response.json();
-                    throw new Error(errData.error?.message || "Error en el servidor");
-                }
-                
+                if (!response.ok) throw new Error("Error servidor");
                 const data = await response.json();
-                return data.candidates?.[0]?.content?.parts?.[0]?.text || "Lo siento, no pude procesar la consulta.";
+                return data.candidates?.[0]?.content?.parts?.[0]?.text || "Error al procesar.";
             } catch (error) {
-                console.error("Gemini Error:", error);
-                // Mensaje amigable si el servidor "se duerme" (pasa en Render gratuito)
-                if (error.message.includes('Failed to fetch')) {
-                    return "El servidor de IA se está iniciando (puede tardar 50 seg la primera vez). Por favor, intenta de nuevo.";
-                }
-                return "Hubo un error de conexión con el servidor seguro.";
+                return "El servidor de IA se está iniciando. Intenta en unos segundos.";
             }
         }
 
-        // --- DATOS ESTÁTICOS ---
         const SCALE_2013 = [
             { limit: 4000, percent: 25 }, { limit: 18000, percent: 18 }, { limit: 30000, percent: 16 }, 
             { limit: 45000, percent: 14 }, { limit: 60000, percent: 12 }, { limit: 90000, percent: 10 }, 
@@ -287,62 +177,67 @@
 
         const PROCEDURES = {
             CIVIL: [
-                { category: 'Declarativos' },
+               { category: 'Declarativos' },
                 { id: 'c4_ordinario', label: 'Juicio Ordinario (Criterio 4)', min: 2100, mod: 100, explanation: 'Tramitación íntegra. Criterio 4.' },
                 { id: 'c5_verbal', label: 'Juicio Verbal (Criterio 5)', min: 1200, mod: 100, explanation: 'Tramitación íntegra. Criterio 5.' },
                 { id: 'c5_desahucio_no_op', label: 'Desahucio (Sin Oposición)', min: 600, mod: 50, explanation: 'Reducción al 50% por falta de oposición. Criterio 5.2.B.' },
                 { id: 'c5_desahucio_op', label: 'Desahucio (Con Vista)', min: 900, mod: 100, explanation: '100% Escala al celebrarse vista. Criterio 5.2.C.' },
                 { id: 'c23_monitorio', label: 'Monitorio (Sin Oposición)', min: 400, mod: 25, explanation: 'Se aplica prudencialmente 25% Escala o fijo 400€. Criterio 23.' },
                 { id: 'c24_cambiario', label: 'Cambiario (Con Oposición)', min: 1200, mod: 50, explanation: 'Solo fase de oposición. Criterio 24.' },
-                { id: 'c18_familia', label: 'Familia (Contencioso)', min: 2500, mod: 0, isFixedBase: true, explanation: 'Base fija de referencia. Criterio 18.' },
+                { id: 'c18_familia', label: 'Familia (Contencioso)', min: 2500, mod: 100, isFixedBase: true, explanation: 'Base fija de referencia. Criterio 18.' },
+
                 { category: 'Ejecuciones' },
                 { id: 'c15_ejec_din_op', label: 'Ejec. Dineraria (Con Oposición)', min: 1200, mod: 50, explanation: '50% Escala si hay oposición/consignación. Criterio 15.A.3.' },
                 { id: 'c15_ejec_din_integra', label: 'Ejec. Vía Apremio (Completa)', min: 1200, mod: 75, explanation: '75% Escala sin oposición (hasta subasta). Criterio 15.A.4.' },
                 { id: 'c15_hipotecario', label: 'Ejecución Hipotecaria', min: 1200, mod: 75, explanation: 'Base: Menor entre Deuda y Resp. Hipotecaria. Criterio 15.D.' },
                 { id: 'c15_tit_no_jud', label: 'Ejec. Título No Judicial', min: 600, mod: 50, explanation: '50% Escala sin oposición. Criterio 15.C.' },
+
                 { category: 'Recursos' },
                 { id: 'c7_apelacion', label: 'Apelación (Audiencia Provincial)', min: 1200, mod: 50, explanation: '50% de la Escala. Criterio 7.' },
                 { id: 'c9_casacion', label: 'Casación / Extraordinario', min: 3200, mod: 85, explanation: '85% de la Escala. Criterio 9.' },
+
                 { category: 'Incidentes' },
                 { id: 'c2_incidente', label: 'Incidente / Tasación Costas', min: 450, mod: 20, explanation: '20% de la Escala. Criterio 2.' },
             ],
             PENAL: [
                 { category: 'Responsabilidad Civil (Título II)' },
-                { id: 'c85_rc_instancia', label: 'Resp. Civil en Sentencia', min: 0, mod: 70, explanation: '70% de la Escala sobre la indemnización. Criterio 85.' },
+                { id: 'c85_rc_instancia', label: 'Resp. Civil en Sentencia', min: 0, mod: 70, explanation: '70% de la Escala Civil sobre la indemnización. Criterio 85.' },
                 { id: 'c86_rc_apelacion', label: 'Resp. Civil en Apelación', min: 0, mod: 35, explanation: '50% de lo correspondiente a la instancia (aprox 35% total). Criterio 86.' },
-                
+
                 { category: 'Actuaciones Penales (Referencias Fijas)' },
-                { id: 'c35_instruccion', label: 'Instrucción / Escritos Acusación', min: 550, mod: 0, isFixedBase: true, explanation: 'Valor ref. escrito acusación/defensa (Abreviado). Criterio 35.' },
-                { id: 'c37_juicio_oral', label: 'Asistencia Juicio Oral (Penal)', min: 650, mod: 0, isFixedBase: true, explanation: 'Valor ref. asistencia a vista en Juzgado Penal. Criterio 37.' },
+                { id: 'c35_instruccion', label: 'Instrucción / Escritos Acusación', min: 550, mod: 100, isFixedBase: true, explanation: 'Valor ref. escrito acusación/defensa (Abreviado). Criterio 35.' },
+                { id: 'c37_juicio_oral', label: 'Asistencia Juicio Oral (Penal)', min: 650, mod: 100, isFixedBase: true, explanation: 'Valor ref. asistencia a vista en Juzgado Penal. Criterio 37.' },
             ],
             CONTENCIOSO: [
                 { category: 'Procedimientos (Título III)' },
-                { id: 'c89_ordinario', label: 'Procedimiento Ordinario', min: 2100, mod: 100, explanation: 'Tramitación íntegra. Criterio 89.' },
-                { id: 'c90_abreviado', label: 'Procedimiento Abreviado', min: 1200, mod: 100, explanation: 'Sobre cuantía o interés económico. Criterio 90.' },
-                { id: 'c93_apelacion_cont', label: 'Apelación Contencioso', min: 1200, mod: 50, explanation: '50% de la Escala. Criterio 93.D.' },
+                { id: 'c89_ordinario', label: 'Procedimiento Ordinario', min: 2100, mod: 100, explanation: 'Escala completa. Min 2.100€. Criterio 89.' },
+                { id: 'c90_abreviado', label: 'Procedimiento Abreviado', min: 1200, mod: 100, explanation: 'Escala completa. Min 1.200€. Criterio 90.' },
+                { id: 'c93_apelacion_cont', label: 'Apelación Contencioso', min: 1200, mod: 50, explanation: '50% de la Escala. Min 1.200€. Criterio 93.' },
             ],
             SOCIAL: [
                 { category: 'Procedimientos (Título IV)' },
-                { id: 'c99_cantidad', label: 'Reclamación de Cantidad', min: 600, mod: 100, explanation: 'Aplicación de la Escala. Criterio 99.' },
-                { id: 'c101_despido', label: 'Despido', min: 900, mod: 100, explanation: 'Escala sobre Indemnización + Salarios. Criterio 101.' },
-                { id: 'c109_suplicacion', label: 'Recurso de Suplicación', min: 1200, mod: 50, explanation: '50% de la Escala. Criterio 109.' },
-            ]
+                { id: 'c99_cantidad', label: 'Reclamación de Cantidad', min: 600, mod: 100, explanation: 'Escala completa sobre lo reclamado. Min 600€. Criterio 99.' },
+                { id: 'c101_despido', label: 'Despido', min: 900, mod: 100, explanation: 'Escala sobre Indemnización + Salarios. Min 900€. Criterio 101.' },
+                { id: 'c109_suplicacion', label: 'Recurso de Suplicación', min: 1200, mod: 50, explanation: '50% de la Escala. Min 1.200€. Criterio 109.' },
+            ],
         };
 
         const SCENARIOS = [
-            { pct: 100, label: 'Tramitación Completa', desc: 'Caso estándar: Todas las fases hasta sentencia.', color: 'bg-green-50 text-green-700 border-green-200' },
-            { pct: 60, label: 'Transacción (Acuerdo)', desc: 'Terminación por acuerdo homologado (aprox 60%).', color: 'bg-blue-50 text-blue-700 border-blue-200' },
-            { pct: 50, label: 'Allanamiento / Desist.', desc: 'Terminación anormal antes de juicio (50%).', color: 'bg-orange-50 text-orange-700 border-orange-200' },
-            { pct: 25, label: 'Terminación Inicial', desc: 'Terminación en fase muy temprana.', color: 'bg-red-50 text-red-700 border-red-200' }
+            { id: 'complete', pct: 100, label: 'Tramitación Completa', desc: 'Caso estándar: Todas las fases hasta sentencia.' },
+            { id: 'trans', pct: 60, label: 'Transacción (Acuerdo)', desc: 'Terminación por acuerdo homologado (aprox 60% trabajo).' },
+            { id: 'allan', pct: 50, label: 'Allanamiento / Desist.', desc: 'Terminación anormal (Allanamiento o Desistimiento).' },
+            { id: 'early', pct: 25, label: 'Terminación Inicial', desc: 'Terminación en fase muy temprana, sin alegaciones.' }
         ];
-
-        const getAmountHelp = (mode, procId) => {
-            if (!procId) return "Seleccione un procedimiento.";
-            if (mode === 'EJECUCION') return "Principal + Intereses + Costas (aprox +30%). Hipotecaria: la menor entre Deuda y Resp. Hipot.";
-            if (mode === 'RECURSOS') return "Interés económico del recurso (gravamen).";
-            if (mode === 'CIVIL') return procId.includes('desahucio') ? "1 Anualidad Renta + Deuda." : "Principal reclamado.";
-            return "Importe económico del litigio.";
-        };
+        
+        function getAmountHelp(jurisdiction, procId) {
+            if (jurisdiction === 'PENAL') return "Indique la cuantía de la Responsabilidad Civil solicitada (si la hubiere). Si solo es defensa penal sin contenido económico, deje 0.";
+            if (jurisdiction === 'SOCIAL') {
+                if (procId === 'c101_despido') return "Suma de la Indemnización bruta + Salarios de tramitación.";
+                if (procId === 'c99_cantidad') return "Importe bruto total reclamado.";
+            }
+            if (jurisdiction === 'CONTENCIOSO') return "Cuantía del recurso o interés económico litigioso.";
+            return "Cuantía del procedimiento determinada según las reglas de la LEC (Art. 251 y ss). Para cuantía indeterminada, usar 18.000€ (Criterio 1).";
+        }
 
         // --- CHAT COMPONENT (FLOATING) ---
         function ChatFloating() {
@@ -361,78 +256,42 @@
             const handleSend = async (e) => {
                 e.preventDefault();
                 if (!inputValue.trim()) return;
-
                 const newMessages = [...messages, { role: 'user', content: inputValue }];
                 setMessages(newMessages);
                 setInputValue('');
                 setIsLoading(true);
-
                 const responseText = await chatWithGemini(newMessages);
-                
                 setMessages(prev => [...prev, { role: 'model', content: responseText }]);
                 setIsLoading(false);
             };
 
             return (
                 <>
-                    {/* BOTÓN FLOTANTE */}
-                    <button 
-                        onClick={() => setIsOpen(!isOpen)} 
-                        className="chat-fab fixed bottom-6 left-6 bg-blue-600 text-white px-5 py-3 rounded-full shadow-lg flex items-center gap-2 hover:bg-blue-700 transition-transform hover:scale-105 z-50"
-                    >
+                    <button onClick={() => setIsOpen(!isOpen)} className="chat-fab fixed bottom-6 left-6 bg-blue-600 text-white px-5 py-3 rounded-full shadow-lg flex items-center gap-2 hover:bg-blue-700 transition-transform hover:scale-105 z-50">
                         <i className="fas fa-comment-dots text-xl"></i>
                         <span className="font-bold text-sm">¿Tienes dudas?</span>
                     </button>
-
-                    {/* VENTANA CHAT */}
                     {isOpen && (
                         <div className="chat-window fixed bottom-20 left-6 w-80 md:w-96 h-[450px] bg-white rounded-2xl shadow-2xl flex flex-col border border-slate-200 overflow-hidden animate-fade-in z-50">
                             <div className="bg-slate-800 text-white p-3 border-b border-slate-700 flex justify-between items-center">
                                 <h3 className="font-bold text-sm flex items-center"><i className="fas fa-robot mr-2 text-blue-400"></i> Asistente</h3>
                                 <button onClick={() => setIsOpen(false)} className="hover:text-blue-300 transition"><i className="fas fa-times"></i></button>
                             </div>
-                            
                             <div className="flex-1 overflow-y-auto p-4 bg-slate-50 space-y-3 custom-scrollbar">
                                 {messages.map((msg, idx) => (
                                     <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                                        <div className={`chat-bubble ${
-                                            msg.role === 'user' 
-                                            ? 'chat-user shadow-md' 
-                                            : 'chat-ai shadow-sm markdown-chat'
-                                        }`}>
-                                            {msg.role === 'model' 
-                                                ? <div dangerouslySetInnerHTML={{ __html: marked.parse(msg.content) }} />
-                                                : msg.content
-                                            }
+                                        <div className={`chat-bubble ${msg.role === 'user' ? 'chat-user shadow-md' : 'chat-ai shadow-sm markdown-chat'}`}>
+                                            {msg.role === 'model' ? <div dangerouslySetInnerHTML={{ __html: marked.parse(msg.content) }} /> : msg.content}
                                         </div>
                                     </div>
                                 ))}
-                                {isLoading && (
-                                    <div className="flex justify-start">
-                                        <div className="bg-white border border-slate-200 rounded-2xl rounded-bl-none p-3 shadow-sm flex gap-1">
-                                            <div className="typing-dot"></div><div className="typing-dot"></div><div className="typing-dot"></div>
-                                        </div>
-                                    </div>
-                                )}
+                                {isLoading && <div className="flex justify-start"><div className="bg-white border border-slate-200 rounded-2xl rounded-bl-none p-3 shadow-sm flex gap-1"><div className="typing-dot"></div><div className="typing-dot"></div><div className="typing-dot"></div></div></div>}
                                 <div ref={messagesEndRef} />
                             </div>
-
                             <form onSubmit={handleSend} className="p-3 bg-white border-t border-slate-200">
                                 <div className="relative">
-                                    <input
-                                        type="text"
-                                        value={inputValue}
-                                        onChange={(e) => setInputValue(e.target.value)}
-                                        placeholder="Escribe tu consulta..."
-                                        className="w-full pl-4 pr-10 py-2.5 bg-slate-100 border-none rounded-full text-xs focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all outline-none"
-                                    />
-                                    <button 
-                                        type="submit" 
-                                        disabled={!inputValue.trim() || isLoading}
-                                        className="absolute right-1 top-1 w-7 h-7 bg-blue-600 text-white rounded-full flex items-center justify-center hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm"
-                                    >
-                                        <i className="fas fa-paper-plane text-xs"></i>
-                                    </button>
+                                    <input type="text" value={inputValue} onChange={(e) => setInputValue(e.target.value)} placeholder="Escribe tu consulta..." className="w-full pl-4 pr-10 py-2.5 bg-slate-100 border-none rounded-full text-xs focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all outline-none" />
+                                    <button type="submit" disabled={!inputValue.trim() || isLoading} className="absolute right-1 top-1 w-7 h-7 bg-blue-600 text-white rounded-full flex items-center justify-center hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm"><i className="fas fa-paper-plane text-xs"></i></button>
                                 </div>
                             </form>
                         </div>
@@ -441,21 +300,14 @@
             );
         }
 
-        // --- PASSWORD SCREEN ---
+        // --- LOGIN ---
         function LoginScreen({ onLogin }) {
             const [password, setPassword] = useState("");
             const [error, setError] = useState(false);
-
             const handleSubmit = (e) => {
                 e.preventDefault();
-                if (password === "DBS26") {
-                    onLogin();
-                } else {
-                    setError(true);
-                    setPassword("");
-                }
+                if (password === "DBS26") { onLogin(); } else { setError(true); setPassword(""); }
             };
-
             return (
                 <div className="min-h-screen flex items-center justify-center bg-slate-100 p-4">
                     <div className="bg-white p-8 rounded-2xl shadow-xl w-full max-w-sm border border-slate-200 text-center">
@@ -479,15 +331,36 @@
             const [customMod, setCustomMod] = useState(100);
             const [selectedScenario, setSelectedScenario] = useState(SCENARIOS[0]);
             const [includeVAT, setIncludeVAT] = useState(true);
+            const [applyLimit, setApplyLimit] = useState(false);
             const [details, setDetails] = useState(null);
             const [tab, setTab] = useState('RESUMEN'); 
 
+            // Actualizar el procedimiento seleccionado por defecto al cambiar jurisdicción
             useEffect(() => {
                 const firstProc = PROCEDURES[jurisdiction].find(p => p.id);
                 if (firstProc) setSelectedProcId(firstProc.id);
-                setCustomMod(100);
-                setSelectedScenario(SCENARIOS[0]);
+                setApplyLimit(false); 
             }, [jurisdiction]);
+
+            // Efecto para actualizar el slider automáticamente según el procedimiento
+            useEffect(() => {
+                const proc = PROCEDURES[jurisdiction].find(p => p.id === selectedProcId);
+                if (proc) {
+                    setCustomMod(proc.mod); 
+                    
+                    // LÓGICA MODIFICADA: Si es automático, NO seleccionamos ningún "Escenario Manual"
+                    // Creamos un estado "neutro" para mostrar la info pero no iluminar botones.
+                    setSelectedScenario({
+                        id: 'proc_default', // ID que no coincide con los botones manuales
+                        pct: proc.mod,
+                        label: 'Estándar Procedimiento',
+                        desc: `Escala ajustada automáticamente al ${proc.mod}% según Criterio para ${proc.label}.`,
+                        color: 'bg-blue-50 text-blue-800'
+                    });
+
+                    setApplyLimit(false); 
+                }
+            }, [selectedProcId, jurisdiction]);
 
             const currentProcedure = useMemo(() => {
                 return PROCEDURES[jurisdiction].find(p => p.id === selectedProcId) || {};
@@ -498,9 +371,14 @@
             const handleSliderChange = (e) => {
                 const val = Number(e.target.value);
                 setCustomMod(val);
-                const match = SCENARIOS.find(s => s.pct === val);
-                if (match) setSelectedScenario(match);
-                else setSelectedScenario({ pct: val, label: 'Personalizado', desc: `Ajuste manual al ${val}% definido por el usuario.`, color: 'bg-gray-50 text-gray-700' });
+                // Al mover el slider manualmente, deseleccionamos los botones de escenario
+                setSelectedScenario({
+                    id: 'custom',
+                    pct: val,
+                    label: 'Personalizado',
+                    desc: `Ajuste manual al ${val}% definido por el usuario.`,
+                    color: 'bg-gray-50 text-gray-700'
+                });
             };
 
             const handleScenarioClick = (scenario) => {
@@ -517,14 +395,18 @@
                 if (currentProcedure.isFixedBase) {
                     const base = currentProcedure.min;
                     const adjustedBase = base * (customMod / 100);
+                    
                     let finalBase = adjustedBase;
                     let capped = false;
-                    if (finalBase > oneThirdLimit) { finalBase = oneThirdLimit; capped = true; }
+                    const isOverLimit = finalBase > oneThirdLimit;
+                    
+                    if (isOverLimit && applyLimit) { finalBase = oneThirdLimit; capped = true; }
+                    
                     const vat = finalBase * 0.21;
                     
                     setDetails({
                         breakdown: [], scaleTotal: 0, reducedByCrit: base, minApplied: false, effectiveMin: base,
-                        preCapBase: adjustedBase, finalBase, cappedByLimit: capped, oneThirdLimit, vat,
+                        preCapBase: adjustedBase, finalBase, cappedByLimit: capped, oneThirdLimit, isOverLimit, vat,
                         grandTotal: includeVAT ? finalBase + vat : finalBase,
                         isFixed: true
                     });
@@ -548,9 +430,9 @@
                     prevLimit = tier.limit;
                 }
 
-                const valueAfterCriteria = scaleAccumulator * (currentProcedure.mod / 100);
-                const valueAfterManualMod = valueAfterCriteria * (customMod / 100);
-                let effectiveMin = currentProcedure.min * (currentProcedure.mod >= 100 ? 1 : currentProcedure.mod/100) * (customMod/100);
+                const valueAfterManualMod = scaleAccumulator * (customMod / 100);
+                
+                let effectiveMin = currentProcedure.min * (customMod / 100); 
                 if (effectiveMin < 100 && numericAmount > 0) effectiveMin = 100;
 
                 let calculatedBase = valueAfterManualMod;
@@ -559,17 +441,20 @@
 
                 let finalBase = calculatedBase;
                 let capped = false;
-                if (finalBase > oneThirdLimit) { finalBase = oneThirdLimit; capped = true; }
+                const isOverLimit = numericAmount > 0 && finalBase > oneThirdLimit;
+                
+                if (isOverLimit && applyLimit) { finalBase = oneThirdLimit; capped = true; }
 
                 const vat = finalBase * 0.21;
                 setDetails({ 
-                    breakdown: breakdownList, scaleTotal: scaleAccumulator, reducedByCrit: valueAfterCriteria, effectiveMin, minApplied, 
-                    preCapBase: calculatedBase, finalBase, cappedByLimit: capped, oneThirdLimit, vat, 
+                    breakdown: breakdownList, scaleTotal: scaleAccumulator, reducedByCrit: 0, 
+                    effectiveMin, minApplied, 
+                    preCapBase: calculatedBase, finalBase, cappedByLimit: capped, oneThirdLimit, isOverLimit, vat, 
                     grandTotal: includeVAT ? finalBase + vat : finalBase,
                     isFixed: false 
                 });
 
-            }, [amount, currentProcedure, customMod, includeVAT]);
+            }, [amount, currentProcedure, customMod, includeVAT, applyLimit]);
 
             if (!isAuthenticated) return <LoginScreen onLogin={() => setIsAuthenticated(true)} />;
 
@@ -579,7 +464,6 @@
                         
                         {/* LEFT COLUMN */}
                         <div className="lg:col-span-3 space-y-4">
-                            {/* TITLE CARD - UPDATED DESIGN */}
                             <div className="bg-white rounded-xl shadow-lg border-2 border-blue-600 p-6 text-center transform hover:scale-[1.01] transition-transform">
                                 <h1 className="font-extrabold text-slate-900 text-lg uppercase leading-tight tracking-tight">
                                     CALCULADORA HONORARIOS LETRADO<br/>
@@ -605,7 +489,7 @@
 
                             <div className="bg-slate-100 p-4 rounded-xl border border-slate-200 text-[11px] text-slate-500">
                                 <strong>Nota Legal:</strong><br/>
-                                Se aplica automáticamente el límite del art. 394.3 LEC (un tercio de la cuantía) para la tasación de costas contra la parte vencida.
+                                El límite del art. 394.3 LEC (un tercio) solo es obligatorio en tasaciones de costas a la parte vencida, no en jura de cuentas propia salvo excepciones.
                             </div>
                         </div>
 
@@ -669,9 +553,9 @@
                                 <div className="flex justify-between items-center mb-4 border-b pb-2">
                                     <h2 className="text-sm font-bold text-slate-800 uppercase flex items-center">
                                         <span className="bg-slate-200 text-slate-600 rounded-full w-5 h-5 flex items-center justify-center text-xs mr-2">2</span>
-                                        Grado de Intervención
+                                        Grado de Intervención / Escala
                                     </h2>
-                                    <span className={`text-xs font-bold px-2 py-1 rounded border ${selectedScenario.color.replace('text-', 'text-').replace('bg-', 'bg-')}`}>
+                                    <span className={`text-xs font-bold px-2 py-1 rounded border ${selectedScenario.color ? selectedScenario.color.replace('text-', 'text-').replace('bg-', 'bg-') : 'bg-white text-gray-700'}`}>
                                         {customMod}%
                                     </span>
                                 </div>
@@ -679,18 +563,18 @@
                                 <div className="grid grid-cols-2 gap-2 mb-4">
                                     {SCENARIOS.map((sc) => (
                                         <button
-                                            key={sc.pct}
+                                            key={sc.id}
                                             onClick={() => handleScenarioClick(sc)}
-                                            className={`scenario-btn p-2 rounded-lg border text-left text-xs relative ${customMod === sc.pct ? `bg-blue-50 border-blue-500 ring-1 ring-blue-500` : 'bg-white border-slate-200 hover:border-blue-300'}`}
+                                            className={`scenario-btn p-2 rounded-lg border text-left text-xs relative ${selectedScenario?.id === sc.id ? `bg-blue-50 border-blue-500 ring-1 ring-blue-500` : 'bg-white border-slate-200 hover:border-blue-300'}`}
                                         >
                                             <div className="font-bold text-slate-700">{sc.label}</div>
                                             <div className="text-slate-400 font-mono mt-1">{sc.pct}%</div>
-                                            {customMod === sc.pct && <i className="fas fa-check-circle absolute top-2 right-2 text-blue-500"></i>}
+                                            {selectedScenario?.id === sc.id && <i className="fas fa-check-circle absolute top-2 right-2 text-blue-500"></i>}
                                         </button>
                                     ))}
                                 </div>
 
-                                <div className={`p-3 rounded-lg border text-xs leading-relaxed fade-in mb-4 ${selectedScenario.color}`}>
+                                <div className={`p-3 rounded-lg border text-xs leading-relaxed fade-in mb-4 ${selectedScenario.color || 'bg-white text-gray-700'}`}>
                                     <strong className="block mb-1"><i className="fas fa-info-circle mr-1"></i> Detalle Criterio:</strong>
                                     {selectedScenario.desc}
                                 </div>
@@ -728,20 +612,36 @@
                                 </div>
                             )}
 
-                            {/* ALERTAS LÍMITE */}
-                            {details && details.cappedByLimit && (
-                                <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded shadow-sm fade-in">
-                                    <div className="flex">
-                                        <div className="flex-shrink-0">
-                                            <i className="fas fa-gavel text-red-500"></i>
+                            {/* ALERTAS LÍMITE (MODIFICADO: AHORA ES OPCIONAL) */}
+                            {details && details.isOverLimit && (
+                                <div className={`border-l-4 p-4 rounded shadow-sm fade-in transition-colors ${details.cappedByLimit ? 'bg-orange-50 border-orange-500' : 'bg-yellow-50 border-yellow-400'}`}>
+                                    <div className="flex items-start">
+                                        <div className="flex-shrink-0 mt-0.5">
+                                            <i className={`fas fa-scale-balanced ${details.cappedByLimit ? 'text-orange-500' : 'text-yellow-500'}`}></i>
                                         </div>
-                                        <div className="ml-3">
-                                            <p className="text-sm text-red-700 font-bold">
-                                                Límite Legal Aplicado (Art. 394.3 LEC)
+                                        <div className="ml-3 w-full">
+                                            <p className={`text-sm font-bold ${details.cappedByLimit ? 'text-orange-800' : 'text-yellow-800'}`}>
+                                                Aviso Límite Art. 394.3 LEC
                                             </p>
-                                            <p className="text-xs text-red-600 mt-1">
-                                                Los honorarios excedían la tercera parte de la cuantía ({details.preCapBase.toLocaleString('es-ES', {maximumFractionDigits:0})}€). Se ha reducido al máximo legal: <strong>{details.oneThirdLimit.toLocaleString('es-ES', {maximumFractionDigits:2})}€</strong>.
+                                            <p className={`text-xs mt-1 mb-2 ${details.cappedByLimit ? 'text-orange-700' : 'text-yellow-700'}`}>
+                                                Revisar si el importe supera la tercera parte de la cuantía ({details.oneThirdLimit.toLocaleString('es-ES', {maximumFractionDigits:0})}€).
                                             </p>
+                                            
+                                            {/* TOGGLE SWITCH PARA APLICAR LIMITE */}
+                                            <div className="flex items-center justify-between bg-white bg-opacity-60 p-2 rounded-lg border border-opacity-20 border-black">
+                                                <span className="text-xs font-semibold text-slate-700">Aplicar reducción legal</span>
+                                                <div className="relative inline-block w-10 mr-2 align-middle select-none transition duration-200 ease-in">
+                                                    <input 
+                                                        type="checkbox" 
+                                                        name="toggle" 
+                                                        id="toggleLimit" 
+                                                        checked={applyLimit}
+                                                        onChange={() => setApplyLimit(!applyLimit)}
+                                                        className="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer"
+                                                    />
+                                                    <label htmlFor="toggleLimit" className="toggle-label block overflow-hidden h-5 rounded-full bg-gray-300 cursor-pointer"></label>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -784,12 +684,9 @@
                                                 </div>
                                             )}
                                             <div className="space-y-2 bg-slate-50 p-3 rounded-lg border border-slate-100">
-                                                <div className="flex justify-between items-center text-xs text-slate-600">
-                                                    <span>Procedimiento ({currentProcedure.mod}%)</span>
-                                                    <span className="font-mono">{details.reducedByCrit.toLocaleString('es-ES', {minimumFractionDigits: 2})}€</span>
-                                                </div>
+                                                {/* Eliminado linea "Procedimiento" separada, ahora integrada en Ajuste */}
                                                 <div className="flex justify-between items-center text-blue-600 font-bold text-xs">
-                                                    <span>Ajuste ({customMod}%)</span>
+                                                    <span>Ajuste Aplicado ({customMod}%)</span>
                                                     <span className="font-mono">{details.preCapBase.toLocaleString('es-ES', {minimumFractionDigits: 2})}€</span>
                                                 </div>
                                                 {details.minApplied && <div className="mt-2 bg-yellow-50 text-yellow-700 p-2 rounded text-[10px] border border-yellow-100"><i className="fas fa-exclamation-triangle mr-1"></i> <strong>Mínimo Aplicado:</strong> El cálculo era inferior al valor de referencia ({details.effectiveMin.toLocaleString()}€).</div>}
@@ -812,15 +709,8 @@
                                                     )}
                                                     <tr>
                                                         <td className="py-2 px-2 text-slate-500">
-                                                            Aplicación Criterio ({currentProcedure.mod}%)
-                                                            <div className="text-[9px] text-slate-400 italic">Reducción por tipo de procedimiento</div>
-                                                        </td>
-                                                        <td className="py-2 px-2 text-right font-mono text-slate-700">{details.reducedByCrit.toLocaleString('es-ES', {minimumFractionDigits:2})} €</td>
-                                                    </tr>
-                                                    <tr>
-                                                        <td className="py-2 px-2 text-slate-500">
                                                             Ajuste Intervención ({customMod}%)
-                                                            <div className="text-[9px] text-slate-400 italic">Moderación manual aplicada</div>
+                                                            <div className="text-[9px] text-slate-400 italic">Porcentaje según trámite o manual</div>
                                                         </td>
                                                         <td className="py-2 px-2 text-right font-mono text-blue-600 font-bold">{details.preCapBase.toLocaleString('es-ES', {minimumFractionDigits:2})} €</td>
                                                     </tr>
@@ -831,9 +721,9 @@
                                                         </tr>
                                                     )}
                                                     {details.cappedByLimit && (
-                                                        <tr className="bg-red-50">
-                                                            <td className="py-2 px-2 text-red-700 font-semibold">Límite 1/3 (Art 394.3)</td>
-                                                            <td className="py-2 px-2 text-right font-mono text-red-700">{details.oneThirdLimit.toLocaleString('es-ES', {minimumFractionDigits:2})} €</td>
+                                                        <tr className="bg-orange-50">
+                                                            <td className="py-2 px-2 text-orange-700 font-semibold">Recorte 1/3 (Art 394.3)</td>
+                                                            <td className="py-2 px-2 text-right font-mono text-orange-700">{details.oneThirdLimit.toLocaleString('es-ES', {minimumFractionDigits:2})} €</td>
                                                         </tr>
                                                     )}
                                                     <tr className="bg-slate-100 border-t-2 border-slate-200">
