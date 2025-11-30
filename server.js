@@ -1,7 +1,8 @@
 const express = require('express');
 const cors = require('cors');
 const app = express();
-const fetch = require('node-fetch'); // Usamos require para node-fetch en Node.js
+// SOLUCIÓN: Cambiamos la importación para obtener 'fetch' de las propiedades del módulo.
+const fetch = require('node-fetch').default; 
 
 // IMPORTANTE: Configuración de seguridad (CORS)
 // Esta lista SÓLO permite que tu dominio de GitHub Pages use este servidor.
@@ -75,7 +76,8 @@ app.get('/', (req, res) => {
     res.send('El servidor proxy para la Calculadora Legal está activo.');
 });
 
-const PORT = process.env.PORT || 10000; // Usamos 10000 para forzar el puerto que detectó Render
+// Cambiamos el puerto para usar la variable de entorno de Render si está disponible, sino 10000.
+const PORT = process.env.PORT || 10000; 
 app.listen(PORT, () => {
     console.log(`Servidor corriendo en puerto ${PORT}`);
 });
