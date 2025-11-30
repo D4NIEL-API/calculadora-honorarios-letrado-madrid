@@ -130,8 +130,6 @@
           "RESUMEN": "Calculadora basada en Criterios ICAM para tasación de costas."
         }
         `; 
-        // (Nota: Se mantiene el contexto completo internamente en la API real o reducido aquí para brevedad del código, 
-        // pero funcionalmente no afecta a la lógica de cálculo local).
 
         async function chatWithGemini(messages) {
             try {
@@ -333,7 +331,6 @@
             const [includeVAT, setIncludeVAT] = useState(true);
             const [applyLimit, setApplyLimit] = useState(false);
             const [details, setDetails] = useState(null);
-            const [tab, setTab] = useState('RESUMEN'); 
 
             // Actualizar el procedimiento seleccionado por defecto al cambiar jurisdicción
             useEffect(() => {
@@ -624,7 +621,7 @@
                                                 Aviso Límite Art. 394.3 LEC
                                             </p>
                                             <p className={`text-xs mt-1 mb-2 ${details.cappedByLimit ? 'text-orange-700' : 'text-yellow-700'}`}>
-                                                Revisar si el importe supera la tercera parte de la cuantía ({details.oneThirdLimit.toLocaleString('es-ES', {maximumFractionDigits:0})}€).
+                                                El importe supera la tercera parte de la cuantía ({details.oneThirdLimit.toLocaleString('es-ES', {maximumFractionDigits:0})}€).
                                             </p>
                                             
                                             {/* TOGGLE SWITCH PARA APLICAR LIMITE */}
@@ -647,103 +644,120 @@
                                 </div>
                             )}
 
-                            {/* BREAKDOWN WITH TABS */}
+                            {/* UNIFIED BREAKDOWN */}
                             {details && (
                                 <div className="bg-white p-5 rounded-xl shadow-sm border border-slate-200 text-sm fade-in">
-                                    {/* Tabs Header */}
-                                    <div className="flex border-b border-slate-200 mb-4">
-                                        <button 
-                                            className={`pb-2 px-3 text-xs font-bold ${tab === 'RESUMEN' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-slate-400 hover:text-slate-600'}`}
-                                            onClick={() => setTab('RESUMEN')}
-                                        >
-                                            RESUMEN
-                                        </button>
-                                        <button 
-                                            className={`pb-2 px-3 text-xs font-bold ${tab === 'DETALLE' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-slate-400 hover:text-slate-600'}`}
-                                            onClick={() => setTab('DETALLE')}
-                                        >
-                                            DESGLOSE COMPLETO
-                                        </button>
-                                    </div>
+                                    <h3 className="font-bold text-slate-800 border-b border-slate-200 pb-2 mb-4">DESGLOSE</h3>
 
-                                    {/* TAB CONTENT */}
-                                    {tab === 'RESUMEN' ? (
-                                        <>
-                                            {!details.isFixed && (
-                                                <div className="mb-4">
-                                                    <div className="flex justify-between text-xs font-bold text-slate-400 uppercase mb-1"><span>Escala Base</span><span>Cuota</span></div>
-                                                    <div className="max-h-32 overflow-y-auto space-y-1 pr-1 custom-scrollbar border-b border-slate-100 pb-2">
-                                                        {details.breakdown.map((row, i) => (
-                                                            <div key={i} className="flex justify-between text-xs text-slate-600 py-0.5">
-                                                                <span>{row.range} <span className="text-blue-500">({row.pct}%)</span></span>
-                                                                <span className="font-mono">{row.fee.toLocaleString('es-ES', {maximumFractionDigits:0})}€</span>
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                    <div className="flex justify-between font-bold text-slate-700 mt-1 pt-1 border-t border-slate-50"><span>Total Escala:</span><span>{details.scaleTotal.toLocaleString('es-ES')}€</span></div>
-                                                </div>
-                                            )}
-                                            <div className="space-y-2 bg-slate-50 p-3 rounded-lg border border-slate-100">
-                                                {/* Eliminado linea "Procedimiento" separada, ahora integrada en Ajuste */}
-                                                <div className="flex justify-between items-center text-blue-600 font-bold text-xs">
-                                                    <span>Ajuste Aplicado ({customMod}%)</span>
-                                                    <span className="font-mono">{details.preCapBase.toLocaleString('es-ES', {minimumFractionDigits: 2})}€</span>
-                                                </div>
-                                                {details.minApplied && <div className="mt-2 bg-yellow-50 text-yellow-700 p-2 rounded text-[10px] border border-yellow-100"><i className="fas fa-exclamation-triangle mr-1"></i> <strong>Mínimo Aplicado:</strong> El cálculo era inferior al valor de referencia ({details.effectiveMin.toLocaleString()}€).</div>}
-                                            </div>
-                                        </>
-                                    ) : (
-                                        /* TABLA DETALLADA */
-                                        <div className="overflow-x-auto">
-                                            <table className="w-full text-[11px] text-left border-collapse">
-                                                <tbody className="divide-y divide-slate-100">
-                                                    <tr className="bg-slate-50">
-                                                        <td className="py-2 px-2 font-bold text-slate-600">Concepto</td>
-                                                        <td className="py-2 px-2 font-bold text-slate-600 text-right">Importe</td>
-                                                    </tr>
-                                                    {!details.isFixed && (
+                                    {/* Section 1: Scale Breakdown (Only if not fixed) */}
+                                    {!details.isFixed && (
+                                        <div className="mb-6">
+                                            <h4 className="text-xs font-bold text-slate-500 uppercase mb-2">1. Cálculo de la Escala</h4>
+                                            <div className="bg-slate-50 rounded-lg border border-slate-200 overflow-hidden">
+                                                <table className="w-full text-xs">
+                                                    <thead className="bg-slate-100 text-slate-500 border-b border-slate-200">
                                                         <tr>
-                                                            <td className="py-2 px-2 text-slate-500">Suma Escala General</td>
+                                                            <th className="px-3 py-2 text-left font-normal">Tramo Cuantía</th>
+                                                            <th className="px-3 py-2 text-center font-normal">%</th>
+                                                            <th className="px-3 py-2 text-right font-normal">Cuota</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody className="divide-y divide-slate-100 text-slate-600">
+                                                        {details.breakdown.map((row, i) => (
+                                                            <tr key={i}>
+                                                                <td className="px-3 py-1.5">{row.range}</td>
+                                                                <td className="px-3 py-1.5 text-center text-blue-500">{row.pct}%</td>
+                                                                <td className="px-3 py-1.5 text-right font-mono">{row.fee.toLocaleString('es-ES', {maximumFractionDigits:2})}€</td>
+                                                            </tr>
+                                                        ))}
+                                                        <tr className="bg-slate-100 font-bold text-slate-700">
+                                                            <td className="px-3 py-2" colSpan="2">Suma Escala</td>
+                                                            <td className="px-3 py-2 text-right font-mono">{details.scaleTotal.toLocaleString('es-ES', {minimumFractionDigits:2})}€</td>
+                                                        </tr>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Section 2: Final Calculation Table */}
+                                    <div>
+                                        <h4 className="text-xs font-bold text-slate-500 uppercase mb-2">{!details.isFixed ? '2. Ajustes y Totales' : 'Cálculo de Honorarios'}</h4>
+                                        <div className="overflow-x-auto">
+                                            <table className="w-full text-[13px] text-left border-collapse"> 
+                                                <tbody className="divide-y divide-slate-100">
+                                                    {/* Base Row */}
+                                                    {!details.isFixed ? (
+                                                        <tr>
+                                                            <td className="py-2 px-2 text-slate-600">Suma Escala General</td>
                                                             <td className="py-2 px-2 text-right font-mono">{details.scaleTotal.toLocaleString('es-ES', {minimumFractionDigits:2})} €</td>
                                                         </tr>
+                                                    ) : (
+                                                        <tr>
+                                                            <td className="py-2 px-2 text-slate-600">Base Fija / Referencia</td>
+                                                            <td className="py-2 px-2 text-right font-mono">{currentProcedure.min.toLocaleString('es-ES', {minimumFractionDigits:2})} €</td>
+                                                        </tr>
                                                     )}
+
+                                                    {/* Adjustment Row */}
                                                     <tr>
-                                                        <td className="py-2 px-2 text-slate-500">
-                                                            Ajuste Intervención ({customMod}%)
-                                                            <div className="text-[9px] text-slate-400 italic">Porcentaje según trámite o manual</div>
+                                                        <td className="py-2 px-2 text-slate-600">
+                                                            Ajuste Intervención / Escala ({customMod}%)
+                                                            <div className="text-[10px] text-slate-400 italic">Según procedimiento o grado seleccionado</div>
                                                         </td>
-                                                        <td className="py-2 px-2 text-right font-mono text-blue-600 font-bold">{details.preCapBase.toLocaleString('es-ES', {minimumFractionDigits:2})} €</td>
+                                                        <td className="py-2 px-2 text-right font-mono font-semibold text-blue-700">
+                                                            {details.minApplied ? (
+                                                                <span className="line-through text-slate-400 mr-2 text-xs">{(details.scaleTotal * customMod/100).toLocaleString('es-ES', {maximumFractionDigits:0})} €</span>
+                                                            ) : null}
+                                                            {details.preCapBase.toLocaleString('es-ES', {minimumFractionDigits:2})} €
+                                                        </td>
                                                     </tr>
+
+                                                    {/* Minimum Alert Row */}
                                                     {details.minApplied && (
                                                         <tr className="bg-yellow-50">
-                                                            <td className="py-2 px-2 text-yellow-700 font-semibold">Corrección Mínimo</td>
-                                                            <td className="py-2 px-2 text-right font-mono text-yellow-700">{details.effectiveMin.toLocaleString('es-ES')} €</td>
+                                                            <td className="py-2 px-2 text-yellow-800 font-semibold">
+                                                                <i className="fas fa-arrow-up mr-1"></i> Aplicación Mínimo
+                                                                <div className="text-[10px] text-yellow-600 font-normal">El cálculo era inferior al mínimo del procedimiento</div>
+                                                            </td>
+                                                            <td className="py-2 px-2 text-right font-mono text-yellow-800 font-bold">{details.effectiveMin.toLocaleString('es-ES', {minimumFractionDigits:2})} €</td>
                                                         </tr>
                                                     )}
+
+                                                    {/* Limit 1/3 Row */}
                                                     {details.cappedByLimit && (
-                                                        <tr className="bg-orange-50">
-                                                            <td className="py-2 px-2 text-orange-700 font-semibold">Recorte 1/3 (Art 394.3)</td>
-                                                            <td className="py-2 px-2 text-right font-mono text-orange-700">{details.oneThirdLimit.toLocaleString('es-ES', {minimumFractionDigits:2})} €</td>
+                                                        <tr className="bg-orange-50 border-l-4 border-orange-400">
+                                                            <td className="py-2 px-2 text-orange-800 font-semibold">
+                                                                <i className="fas fa-scissors mr-1"></i> Límite Art. 394.3 LEC (1/3)
+                                                                <div className="text-[10px] text-orange-600 font-normal">Reducción aplicada por superar el tercio de la cuantía</div>
+                                                            </td>
+                                                            <td className="py-2 px-2 text-right font-mono text-orange-800 font-bold">{details.oneThirdLimit.toLocaleString('es-ES', {minimumFractionDigits:2})} €</td>
                                                         </tr>
                                                     )}
+
+                                                    {/* Taxable Base */}
                                                     <tr className="bg-slate-100 border-t-2 border-slate-200">
-                                                        <td className="py-3 px-2 font-bold text-slate-800">BASE IMPONIBLE</td>
+                                                        <td className="py-3 px-2 font-bold text-slate-800 text-sm">BASE IMPONIBLE (Honorarios Netos)</td>
                                                         <td className="py-3 px-2 text-right font-bold font-mono text-slate-900 text-sm">{details.finalBase.toLocaleString('es-ES', {minimumFractionDigits:2})} €</td>
                                                     </tr>
+
+                                                    {/* VAT */}
                                                     {includeVAT && (
                                                         <tr>
                                                             <td className="py-2 px-2 text-slate-500">IVA (21%)</td>
-                                                            <td className="py-2 px-2 text-right font-mono">{details.vat.toLocaleString('es-ES', {minimumFractionDigits:2})} €</td>
+                                                            <td className="py-2 px-2 text-right font-mono text-slate-600">{details.vat.toLocaleString('es-ES', {minimumFractionDigits:2})} €</td>
                                                         </tr>
                                                     )}
-                                                    <tr className="bg-blue-50 border-t border-blue-100">
-                                                        <td className="py-3 px-2 font-bold text-blue-800">TOTAL A PERCIBIR</td>
-                                                        <td className="py-3 px-2 text-right font-bold font-mono text-blue-800 text-base">{details.grandTotal.toLocaleString('es-ES', {minimumFractionDigits:2})} €</td>
+
+                                                    {/* Final Total */}
+                                                    <tr className="bg-blue-600 text-white">
+                                                        <td className="py-3 px-3 font-bold uppercase">TOTAL A PERCIBIR</td>
+                                                        <td className="py-3 px-3 text-right font-bold font-mono text-lg">{details.grandTotal.toLocaleString('es-ES', {minimumFractionDigits:2})} €</td>
                                                     </tr>
                                                 </tbody>
                                             </table>
                                         </div>
-                                    )}
+                                    </div>
                                 </div>
                             )}
 
