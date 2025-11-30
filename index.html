@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CALCULADORA HONORARIOS LETRADO (ICAM) POR DBS</title>
+    <title>CALCULADORA HONORARIOS LETRADO (MADRID) POR DBS</title>
     <!-- React y Babel -->
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
@@ -41,8 +41,44 @@
         .fade-in { animation: fadeIn 0.4s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         
-        /* Chat Styles */
-        .chat-container { height: 400px; display: flex; flex-direction: column; }
+        /* Chat Styles - Floating Window */
+        .chat-window {
+            position: fixed;
+            bottom: 90px; /* Above the FAB */
+            left: 24px;
+            width: 350px;
+            height: 500px;
+            background-color: white;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+            border: 1px solid #e2e8f0;
+            z-index: 50;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            animation: slideUp 0.3s ease-out;
+        }
+        @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+        .chat-fab {
+            position: fixed;
+            bottom: 24px;
+            left: 24px;
+            background-color: #2563eb;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 9999px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            cursor: pointer;
+            z-index: 50;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: transform 0.2s, background-color 0.2s;
+            font-weight: 600;
+        }
+        .chat-fab:hover { background-color: #1d4ed8; transform: scale(1.05); }
+
         .chat-bubble { max-width: 85%; padding: 10px 14px; border-radius: 12px; font-size: 0.85rem; line-height: 1.5; margin-bottom: 8px; }
         .chat-user { background-color: #1e3a8a; color: white; align-self: flex-end; border-bottom-right-radius: 2px; }
         .chat-ai { background-color: #f1f5f9; color: #334155; border: 1px solid #e2e8f0; align-self: flex-start; border-bottom-left-radius: 2px; }
@@ -266,15 +302,22 @@
                 { id: 'c2_incidente', label: 'Incidente / Tasación Costas', min: 450, mod: 20, explanation: '20% de la Escala. Criterio 2.' },
             ],
             PENAL: [
+                { category: 'Responsabilidad Civil (Título II)' },
                 { id: 'c85_rc_instancia', label: 'Resp. Civil en Sentencia', min: 0, mod: 70, explanation: '70% de la Escala sobre la indemnización. Criterio 85.' },
                 { id: 'c86_rc_apelacion', label: 'Resp. Civil en Apelación', min: 0, mod: 35, explanation: '50% de lo correspondiente a la instancia. Criterio 86.' },
+                
+                { category: 'Actuaciones Penales (Referencias Fijas)' },
+                { id: 'c35_instruccion', label: 'Instrucción / Escritos Acusación', min: 550, mod: 0, isFixedBase: true, explanation: 'Valor ref. escrito acusación/defensa (Abreviado). Criterio 35.' },
+                { id: 'c37_juicio_oral', label: 'Asistencia Juicio Oral (Penal)', min: 650, mod: 0, isFixedBase: true, explanation: 'Valor ref. asistencia a vista en Juzgado Penal. Criterio 37.' },
             ],
             CONTENCIOSO: [
+                { category: 'Procedimientos (Título III)' },
                 { id: 'c89_ordinario', label: 'Procedimiento Ordinario', min: 2100, mod: 100, explanation: 'Tramitación íntegra. Criterio 89.' },
                 { id: 'c90_abreviado', label: 'Procedimiento Abreviado', min: 1200, mod: 100, explanation: 'Sobre cuantía o interés económico. Criterio 90.' },
                 { id: 'c93_apelacion_cont', label: 'Apelación Contencioso', min: 1200, mod: 50, explanation: '50% de la Escala. Criterio 93.D.' },
             ],
             SOCIAL: [
+                { category: 'Procedimientos (Título IV)' },
                 { id: 'c99_cantidad', label: 'Reclamación de Cantidad', min: 600, mod: 100, explanation: 'Aplicación de la Escala. Criterio 99.' },
                 { id: 'c101_despido', label: 'Despido', min: 900, mod: 100, explanation: 'Escala sobre Indemnización + Salarios. Criterio 101.' },
                 { id: 'c109_suplicacion', label: 'Recurso de Suplicación', min: 1200, mod: 50, explanation: '50% de la Escala. Criterio 109.' },
@@ -296,22 +339,19 @@
             return "Importe económico del litigio.";
         };
 
-        // --- CHAT COMPONENT ---
-        function ChatEmbedded() {
+        // --- CHAT COMPONENT (FLOATING) ---
+        function ChatFloating() {
+            const [isOpen, setIsOpen] = useState(false);
             const [messages, setMessages] = useState([
-                { role: 'model', content: 'Hola, soy tu asistente IA. Pregúntame cualquier duda acerca de los criterios de Madrid aplicados para el cálculo de honorarios de letrado.' }
+                { role: 'model', content: 'Hola, soy un asistente experto en Criterios de Honorarios de letrados (Madrid). ¿En qué te puedo ayudar?' }
             ]);
             const [inputValue, setInputValue] = useState('');
             const [isLoading, setIsLoading] = useState(false);
             const messagesEndRef = useRef(null);
 
-            const scrollToBottom = () => {
-                messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-            };
-
             useEffect(() => {
-                scrollToBottom();
-            }, [messages]);
+                if (isOpen) messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+            }, [messages, isOpen]);
 
             const handleSend = async (e) => {
                 e.preventDefault();
@@ -322,7 +362,6 @@
                 setInputValue('');
                 setIsLoading(true);
 
-                // Usamos la API Key integrada
                 const responseText = await chatWithGemini(newMessages);
                 
                 setMessages(prev => [...prev, { role: 'model', content: responseText }]);
@@ -330,58 +369,70 @@
             };
 
             return (
-                <div className="bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden flex flex-col h-[450px] mt-6 relative">
-                    {/* Header */}
-                    <div className="bg-slate-800 text-white p-3 border-b border-slate-700 flex justify-between items-center">
-                        <h3 className="font-bold text-sm flex items-center"><i className="fas fa-robot mr-2 text-blue-400"></i> Asistente</h3>
-                    </div>
-                    
-                    {/* Messages */}
-                    <div className="flex-1 overflow-y-auto p-4 bg-slate-50 space-y-3 custom-scrollbar">
-                        {messages.map((msg, idx) => (
-                            <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                                <div className={`chat-bubble ${
-                                    msg.role === 'user' 
-                                    ? 'chat-user shadow-md' 
-                                    : 'chat-ai shadow-sm markdown-chat'
-                                }`}>
-                                    {msg.role === 'model' 
-                                        ? <div dangerouslySetInnerHTML={{ __html: marked.parse(msg.content) }} />
-                                        : msg.content
-                                    }
-                                </div>
-                            </div>
-                        ))}
-                        {isLoading && (
-                            <div className="flex justify-start">
-                                <div className="bg-white border border-slate-200 rounded-2xl rounded-bl-none p-3 shadow-sm flex gap-1">
-                                    <div className="typing-dot"></div><div className="typing-dot"></div><div className="typing-dot"></div>
-                                </div>
-                            </div>
-                        )}
-                        <div ref={messagesEndRef} />
-                    </div>
+                <>
+                    {/* BOTÓN FLOTANTE */}
+                    <button 
+                        onClick={() => setIsOpen(!isOpen)} 
+                        className="chat-fab fixed bottom-6 left-6 bg-blue-600 text-white px-5 py-3 rounded-full shadow-lg flex items-center gap-2 hover:bg-blue-700 transition-transform hover:scale-105 z-50"
+                    >
+                        <i className="fas fa-comment-dots text-xl"></i>
+                        <span className="font-bold text-sm">¿Tienes dudas?</span>
+                    </button>
 
-                    {/* Input */}
-                    <form onSubmit={handleSend} className="p-3 bg-white border-t border-slate-200">
-                        <div className="relative">
-                            <input
-                                type="text"
-                                value={inputValue}
-                                onChange={(e) => setInputValue(e.target.value)}
-                                placeholder="Escribe tu consulta..."
-                                className="w-full pl-4 pr-10 py-2 bg-slate-100 border-none rounded-full text-xs focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all outline-none"
-                            />
-                            <button 
-                                type="submit" 
-                                disabled={!inputValue.trim() || isLoading}
-                                className="absolute right-1 top-1 w-7 h-7 bg-blue-600 text-white rounded-full flex items-center justify-center hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm"
-                            >
-                                <i className="fas fa-paper-plane text-xs"></i>
-                            </button>
+                    {/* VENTANA CHAT */}
+                    {isOpen && (
+                        <div className="chat-window fixed bottom-20 left-6 w-80 md:w-96 h-[450px] bg-white rounded-2xl shadow-2xl flex flex-col border border-slate-200 overflow-hidden animate-fade-in z-50">
+                            <div className="bg-slate-800 text-white p-3 border-b border-slate-700 flex justify-between items-center">
+                                <h3 className="font-bold text-sm flex items-center"><i className="fas fa-robot mr-2 text-blue-400"></i> Asistente</h3>
+                                <button onClick={() => setIsOpen(false)} className="hover:text-blue-300 transition"><i className="fas fa-times"></i></button>
+                            </div>
+                            
+                            <div className="flex-1 overflow-y-auto p-4 bg-slate-50 space-y-3 custom-scrollbar">
+                                {messages.map((msg, idx) => (
+                                    <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                                        <div className={`chat-bubble ${
+                                            msg.role === 'user' 
+                                            ? 'chat-user shadow-md' 
+                                            : 'chat-ai shadow-sm markdown-chat'
+                                        }`}>
+                                            {msg.role === 'model' 
+                                                ? <div dangerouslySetInnerHTML={{ __html: marked.parse(msg.content) }} />
+                                                : msg.content
+                                            }
+                                        </div>
+                                    </div>
+                                ))}
+                                {isLoading && (
+                                    <div className="flex justify-start">
+                                        <div className="bg-white border border-slate-200 rounded-2xl rounded-bl-none p-3 shadow-sm flex gap-1">
+                                            <div className="typing-dot"></div><div className="typing-dot"></div><div className="typing-dot"></div>
+                                        </div>
+                                    </div>
+                                )}
+                                <div ref={messagesEndRef} />
+                            </div>
+
+                            <form onSubmit={handleSend} className="p-3 bg-white border-t border-slate-200">
+                                <div className="relative">
+                                    <input
+                                        type="text"
+                                        value={inputValue}
+                                        onChange={(e) => setInputValue(e.target.value)}
+                                        placeholder="Escribe tu consulta..."
+                                        className="w-full pl-4 pr-10 py-2.5 bg-slate-100 border-none rounded-full text-xs focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all outline-none"
+                                    />
+                                    <button 
+                                        type="submit" 
+                                        disabled={!inputValue.trim() || isLoading}
+                                        className="absolute right-1 top-1 w-7 h-7 bg-blue-600 text-white rounded-full flex items-center justify-center hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm"
+                                    >
+                                        <i className="fas fa-paper-plane text-xs"></i>
+                                    </button>
+                                </div>
+                            </form>
                         </div>
-                    </form>
-                </div>
+                    )}
+                </>
             );
         }
 
@@ -424,6 +475,7 @@
             const [selectedScenario, setSelectedScenario] = useState(SCENARIOS[0]);
             const [includeVAT, setIncludeVAT] = useState(true);
             const [details, setDetails] = useState(null);
+            const [tab, setTab] = useState('RESUMEN'); 
 
             useEffect(() => {
                 const firstProc = PROCEDURES[jurisdiction].find(p => p.id);
@@ -460,14 +512,16 @@
                 if (currentProcedure.isFixedBase) {
                     const base = currentProcedure.min;
                     const adjustedBase = base * (customMod / 100);
-                    let finalBase = adjustedBase > oneThirdLimit ? oneThirdLimit : adjustedBase;
-                    const capped = adjustedBase > oneThirdLimit;
+                    let finalBase = adjustedBase;
+                    let capped = false;
+                    if (finalBase > oneThirdLimit) { finalBase = oneThirdLimit; capped = true; }
                     const vat = finalBase * 0.21;
                     
                     setDetails({
                         breakdown: [], scaleTotal: 0, reducedByCrit: base, minApplied: false, effectiveMin: base,
                         preCapBase: adjustedBase, finalBase, cappedByLimit: capped, oneThirdLimit, vat,
-                        grandTotal: includeVAT ? finalBase + vat : finalBase
+                        grandTotal: includeVAT ? finalBase + vat : finalBase,
+                        isFixed: true
                     });
                     return;
                 }
@@ -503,7 +557,12 @@
                 if (finalBase > oneThirdLimit) { finalBase = oneThirdLimit; capped = true; }
 
                 const vat = finalBase * 0.21;
-                setDetails({ breakdown: breakdownList, scaleTotal: scaleAccumulator, reducedByCrit: valueAfterCriteria, effectiveMin, minApplied, preCapBase: calculatedBase, finalBase, cappedByLimit: capped, oneThirdLimit, vat, grandTotal: includeVAT ? finalBase + vat : finalBase });
+                setDetails({ 
+                    breakdown: breakdownList, scaleTotal: scaleAccumulator, reducedByCrit: valueAfterCriteria, effectiveMin, minApplied, 
+                    preCapBase: calculatedBase, finalBase, cappedByLimit: capped, oneThirdLimit, vat, 
+                    grandTotal: includeVAT ? finalBase + vat : finalBase,
+                    isFixed: false 
+                });
 
             }, [amount, currentProcedure, customMod, includeVAT]);
 
@@ -517,7 +576,7 @@
                         <div className="lg:col-span-3 space-y-4">
                             {/* TITLE CARD - UPDATED DESIGN */}
                             <div className="bg-white rounded-xl shadow-lg border-2 border-blue-600 p-6 text-center transform hover:scale-[1.01] transition-transform">
-                                <h1 className="font-extrabold text-slate-900 text-xl uppercase leading-tight tracking-tight">
+                                <h1 className="font-extrabold text-slate-900 text-lg uppercase leading-tight tracking-tight">
                                     CALCULADORA HONORARIOS LETRADO<br/>
                                     <span className="text-blue-700">(MADRID)</span> POR DBS
                                 </h1>
@@ -642,7 +701,7 @@
                             {details && (
                                 <div className="bg-slate-800 text-white p-6 rounded-xl shadow-lg relative overflow-hidden fade-in">
                                     <div className="relative z-10">
-                                        <h3 className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1">Honorarios Totales</h3>
+                                        <h3 className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1">Honorarios Totales Letrado</h3>
                                         <div className="flex items-end gap-2 mb-1">
                                             <span className="text-4xl font-extrabold tracking-tight">
                                                 {details.grandTotal.toLocaleString('es-ES', { style: 'currency', currency: 'EUR' })}
@@ -683,42 +742,118 @@
                                 </div>
                             )}
 
-                            {/* BREAKDOWN */}
+                            {/* BREAKDOWN WITH TABS */}
                             {details && (
                                 <div className="bg-white p-5 rounded-xl shadow-sm border border-slate-200 text-sm fade-in">
-                                    <h3 className="font-bold text-slate-700 mb-3 flex items-center"><i className="fas fa-list-ol text-blue-500 mr-2"></i> Desglose</h3>
-                                    
-                                    {!currentProcedure.isFixedBase && (
-                                        <div className="mb-4">
-                                            <div className="flex justify-between text-xs font-bold text-slate-400 uppercase mb-1"><span>Escala Base</span><span>Cuota</span></div>
-                                            <div className="max-h-32 overflow-y-auto space-y-1 pr-1 custom-scrollbar border-b border-slate-100 pb-2">
-                                                {details.breakdown.map((row, i) => (
-                                                    <div key={i} className="flex justify-between text-xs text-slate-600 py-0.5">
-                                                        <span>{row.range} <span className="text-blue-500">({row.pct}%)</span></span>
-                                                        <span className="font-mono">{row.fee.toLocaleString('es-ES', {maximumFractionDigits:0})}€</span>
+                                    {/* Tabs Header */}
+                                    <div className="flex border-b border-slate-200 mb-4">
+                                        <button 
+                                            className={`pb-2 px-3 text-xs font-bold ${tab === 'RESUMEN' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-slate-400 hover:text-slate-600'}`}
+                                            onClick={() => setTab('RESUMEN')}
+                                        >
+                                            RESUMEN
+                                        </button>
+                                        <button 
+                                            className={`pb-2 px-3 text-xs font-bold ${tab === 'DETALLE' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-slate-400 hover:text-slate-600'}`}
+                                            onClick={() => setTab('DETALLE')}
+                                        >
+                                            DESGLOSE COMPLETO
+                                        </button>
+                                    </div>
+
+                                    {/* TAB CONTENT */}
+                                    {tab === 'RESUMEN' ? (
+                                        <>
+                                            {!details.isFixed && (
+                                                <div className="mb-4">
+                                                    <div className="flex justify-between text-xs font-bold text-slate-400 uppercase mb-1"><span>Escala Base</span><span>Cuota</span></div>
+                                                    <div className="max-h-32 overflow-y-auto space-y-1 pr-1 custom-scrollbar border-b border-slate-100 pb-2">
+                                                        {details.breakdown.map((row, i) => (
+                                                            <div key={i} className="flex justify-between text-xs text-slate-600 py-0.5">
+                                                                <span>{row.range} <span className="text-blue-500">({row.pct}%)</span></span>
+                                                                <span className="font-mono">{row.fee.toLocaleString('es-ES', {maximumFractionDigits:0})}€</span>
+                                                            </div>
+                                                        ))}
                                                     </div>
-                                                ))}
+                                                    <div className="flex justify-between font-bold text-slate-700 mt-1 pt-1 border-t border-slate-50"><span>Total Escala:</span><span>{details.scaleTotal.toLocaleString('es-ES')}€</span></div>
+                                                </div>
+                                            )}
+                                            <div className="space-y-2 bg-slate-50 p-3 rounded-lg border border-slate-100">
+                                                <div className="flex justify-between items-center text-xs text-slate-600">
+                                                    <span>Procedimiento ({currentProcedure.mod}%)</span>
+                                                    <span className="font-mono">{details.reducedByCrit.toLocaleString('es-ES', {minimumFractionDigits: 2})}€</span>
+                                                </div>
+                                                <div className="flex justify-between items-center text-blue-600 font-bold text-xs">
+                                                    <span>Ajuste ({customMod}%)</span>
+                                                    <span className="font-mono">{details.preCapBase.toLocaleString('es-ES', {minimumFractionDigits: 2})}€</span>
+                                                </div>
+                                                {details.minApplied && <div className="mt-2 bg-yellow-50 text-yellow-700 p-2 rounded text-[10px] border border-yellow-100"><i className="fas fa-exclamation-triangle mr-1"></i> <strong>Mínimo Aplicado:</strong> El cálculo era inferior al valor de referencia ({details.effectiveMin.toLocaleString()}€).</div>}
                                             </div>
-                                            <div className="flex justify-between font-bold text-slate-700 mt-2"><span>Total Escala:</span><span>{details.scaleTotal.toLocaleString('es-ES', {minimumFractionDigits: 2})}€</span></div>
+                                        </>
+                                    ) : (
+                                        /* TABLA DETALLADA */
+                                        <div className="overflow-x-auto">
+                                            <table className="w-full text-[11px] text-left border-collapse">
+                                                <tbody className="divide-y divide-slate-100">
+                                                    <tr className="bg-slate-50">
+                                                        <td className="py-2 px-2 font-bold text-slate-600">Concepto</td>
+                                                        <td className="py-2 px-2 font-bold text-slate-600 text-right">Importe</td>
+                                                    </tr>
+                                                    {!details.isFixed && (
+                                                        <tr>
+                                                            <td className="py-2 px-2 text-slate-500">Suma Escala General</td>
+                                                            <td className="py-2 px-2 text-right font-mono">{details.scaleTotal.toLocaleString('es-ES', {minimumFractionDigits:2})} €</td>
+                                                        </tr>
+                                                    )}
+                                                    <tr>
+                                                        <td className="py-2 px-2 text-slate-500">
+                                                            Aplicación Criterio ({currentProcedure.mod}%)
+                                                            <div className="text-[9px] text-slate-400 italic">Reducción por tipo de procedimiento</div>
+                                                        </td>
+                                                        <td className="py-2 px-2 text-right font-mono text-slate-700">{details.reducedByCrit.toLocaleString('es-ES', {minimumFractionDigits:2})} €</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td className="py-2 px-2 text-slate-500">
+                                                            Ajuste Intervención ({customMod}%)
+                                                            <div className="text-[9px] text-slate-400 italic">Moderación manual aplicada</div>
+                                                        </td>
+                                                        <td className="py-2 px-2 text-right font-mono text-blue-600 font-bold">{details.preCapBase.toLocaleString('es-ES', {minimumFractionDigits:2})} €</td>
+                                                    </tr>
+                                                    {details.minApplied && (
+                                                        <tr className="bg-yellow-50">
+                                                            <td className="py-2 px-2 text-yellow-700 font-semibold">Corrección Mínimo</td>
+                                                            <td className="py-2 px-2 text-right font-mono text-yellow-700">{details.effectiveMin.toLocaleString('es-ES')} €</td>
+                                                        </tr>
+                                                    )}
+                                                    {details.cappedByLimit && (
+                                                        <tr className="bg-red-50">
+                                                            <td className="py-2 px-2 text-red-700 font-semibold">Límite 1/3 (Art 394.3)</td>
+                                                            <td className="py-2 px-2 text-right font-mono text-red-700">{details.oneThirdLimit.toLocaleString('es-ES', {minimumFractionDigits:2})} €</td>
+                                                        </tr>
+                                                    )}
+                                                    <tr className="bg-slate-100 border-t-2 border-slate-200">
+                                                        <td className="py-3 px-2 font-bold text-slate-800">BASE IMPONIBLE</td>
+                                                        <td className="py-3 px-2 text-right font-bold font-mono text-slate-900 text-sm">{details.finalBase.toLocaleString('es-ES', {minimumFractionDigits:2})} €</td>
+                                                    </tr>
+                                                    {includeVAT && (
+                                                        <tr>
+                                                            <td className="py-2 px-2 text-slate-500">IVA (21%)</td>
+                                                            <td className="py-2 px-2 text-right font-mono">{details.vat.toLocaleString('es-ES', {minimumFractionDigits:2})} €</td>
+                                                        </tr>
+                                                    )}
+                                                    <tr className="bg-blue-50 border-t border-blue-100">
+                                                        <td className="py-3 px-2 font-bold text-blue-800">TOTAL A PERCIBIR</td>
+                                                        <td className="py-3 px-2 text-right font-bold font-mono text-blue-800 text-base">{details.grandTotal.toLocaleString('es-ES', {minimumFractionDigits:2})} €</td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
                                         </div>
                                     )}
-
-                                    <div className="space-y-2 bg-slate-50 p-3 rounded-lg border border-slate-100">
-                                        <div className="flex justify-between items-center text-xs text-slate-600">
-                                            <span>Procedimiento ({currentProcedure.mod}%)</span>
-                                            <span className="font-mono">{details.reducedByCrit.toLocaleString('es-ES', {minimumFractionDigits: 2})}€</span>
-                                        </div>
-                                        <div className="flex justify-between items-center text-blue-600 font-bold text-xs">
-                                            <span>Ajuste ({customMod}%)</span>
-                                            <span className="font-mono">{details.preCapBase.toLocaleString('es-ES', {minimumFractionDigits: 2})}€</span>
-                                        </div>
-                                        {details.minApplied && <div className="mt-2 bg-yellow-50 text-yellow-700 p-2 rounded text-[10px] border border-yellow-100"><i className="fas fa-exclamation-triangle mr-1"></i> <strong>Mínimo Aplicado:</strong> El cálculo era inferior al valor de referencia ({details.effectiveMin.toLocaleString()}€).</div>}
-                                    </div>
                                 </div>
                             )}
 
-                            {/* CHAT INTEGRADO AQUÍ AL FINAL DE LA COLUMNA DERECHA */}
-                            <ChatEmbedded />
+                            {/* CHAT WIDGET FLOTANTE */}
+                            <ChatFloating />
                         </div>
                     </div>
                 </div>
