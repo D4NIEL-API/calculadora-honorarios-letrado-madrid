@@ -331,6 +331,7 @@
             const [includeVAT, setIncludeVAT] = useState(true);
             const [applyLimit, setApplyLimit] = useState(false);
             const [details, setDetails] = useState(null);
+            const [copySuccess, setCopySuccess] = useState(false);
 
             // Actualizar el procedimiento seleccionado por defecto al cambiar jurisdicción
             useEffect(() => {
@@ -453,6 +454,126 @@
 
             }, [amount, currentProcedure, customMod, includeVAT, applyLimit]);
 
+            // --- FUNCTION TO COPY TO WORD (HTML TABLE) ---
+            const handleCopyToWord = async () => {
+                if (!details) return;
+
+                // Estilos CSS en línea para garantizar compatibilidad con Word
+                const tableStyle = "border-collapse: collapse; width: 100%; font-family: 'Segoe UI', Arial, sans-serif; font-size: 10pt; color: #333;";
+                const thStyle = "border: 1px solid #94a3b8; background-color: #f1f5f9; padding: 8px; text-align: left; font-weight: bold; color: #1e3a8a;";
+                const thRightStyle = "border: 1px solid #94a3b8; background-color: #f1f5f9; padding: 8px; text-align: right; font-weight: bold; color: #1e3a8a;";
+                const tdStyle = "border: 1px solid #cbd5e1; padding: 8px; text-align: left;";
+                const tdRightStyle = "border: 1px solid #cbd5e1; padding: 8px; text-align: right; font-family: Consolas, monospace;";
+                const strongStyle = "font-weight: bold; color: #000;";
+
+                // Construcción de la tabla HTML
+                let htmlRows = "";
+
+                if (!details.isFixed) {
+                   // Filas del desglose de la escala
+                   details.breakdown.forEach(row => {
+                       htmlRows += `
+                        <tr>
+                            <td style="${tdStyle}">Tramo ${row.range} (${row.pct}%)</td>
+                            <td style="${tdRightStyle}">${row.fee.toLocaleString('es-ES', {minimumFractionDigits:2})} €</td>
+                        </tr>
+                       `;
+                   });
+                   // Suma Escala
+                   htmlRows += `
+                    <tr style="background-color: #f8fafc;">
+                        <td style="${tdStyle}">Suma Escala General</td>
+                        <td style="${tdRightStyle}">${details.scaleTotal.toLocaleString('es-ES', {minimumFractionDigits:2})} €</td>
+                    </tr>
+                   `;
+                }
+
+                // Ajuste intervención
+                htmlRows += `
+                    <tr>
+                        <td style="${tdStyle}">Ajuste Intervención (${customMod}%)</td>
+                        <td style="${tdRightStyle} color: #2563eb;">${details.preCapBase.toLocaleString('es-ES', {minimumFractionDigits:2})} €</td>
+                    </tr>
+                `;
+
+                // Mínimo
+                if (details.minApplied) {
+                    htmlRows += `
+                        <tr style="background-color: #fefce8;">
+                            <td style="${tdStyle} color: #a16207;">Corrección por Mínimo</td>
+                            <td style="${tdRightStyle} color: #a16207;">${details.effectiveMin.toLocaleString('es-ES')} €</td>
+                        </tr>
+                    `;
+                }
+
+                // Recorte
+                if (details.cappedByLimit) {
+                    htmlRows += `
+                        <tr style="background-color: #fff7ed;">
+                            <td style="${tdStyle} color: #c2410c;">Recorte 1/3 (Art 394.3 LEC)</td>
+                            <td style="${tdRightStyle} color: #c2410c;">${details.oneThirdLimit.toLocaleString('es-ES', {minimumFractionDigits:2})} €</td>
+                        </tr>
+                    `;
+                }
+
+                // Base Imponible
+                htmlRows += `
+                    <tr style="background-color: #f1f5f9;">
+                        <td style="${tdStyle} font-size: 11pt; border-top: 2px solid #94a3b8;">BASE IMPONIBLE</td>
+                        <td style="${tdRightStyle} font-size: 11pt; border-top: 2px solid #94a3b8;">${details.finalBase.toLocaleString('es-ES', {minimumFractionDigits:2})} €</td>
+                    </tr>
+                `;
+
+                // IVA
+                if (includeVAT) {
+                    htmlRows += `
+                        <tr>
+                            <td style="${tdStyle}">IVA (21%)</td>
+                            <td style="${tdRightStyle}">${details.vat.toLocaleString('es-ES', {minimumFractionDigits:2})} €</td>
+                        </tr>
+                    `;
+                }
+
+                // Total
+                htmlRows += `
+                    <tr style="background-color: #eff6ff;">
+                        <td style="${tdStyle} font-size: 12pt; color: #1e3a8a; border-top: 2px solid #2563eb;"><strong>TOTAL HONORARIOS LETRADO (IVA INCLUIDO)</strong></td>
+                        <td style="${tdRightStyle} font-size: 12pt; color: #1e3a8a; border-top: 2px solid #2563eb;"><strong>${details.grandTotal.toLocaleString('es-ES', {minimumFractionDigits:2})} €</strong></td>
+                    </tr>
+                `;
+
+                const fullHtml = `
+                    <h3 style="font-family: Arial, sans-serif; color: #1e3a8a;">Desglose Honorarios de Letrado</h3>
+                    <table style="${tableStyle}">
+                        <thead>
+                            <tr>
+                                <th style="${thStyle}">Concepto</th>
+                                <th style="${thRightStyle}">Importe</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${htmlRows}
+                        </tbody>
+                    </table>
+                `;
+
+                try {
+                    const blobHtml = new Blob([fullHtml], { type: "text/html" });
+                    const blobText = new Blob(["Tabla copiada. Pegue en Word para ver el formato."], { type: "text/plain" });
+                    const data = [new ClipboardItem({ 
+                        "text/html": blobHtml, 
+                        "text/plain": blobText 
+                    })];
+                    await navigator.clipboard.write(data);
+                    
+                    setCopySuccess(true);
+                    setTimeout(() => setCopySuccess(false), 2000);
+                } catch (err) {
+                    console.error("Error al copiar al portapapeles:", err);
+                    alert("No se pudo copiar automáticamente. Por favor, asegúrese de usar un navegador moderno (Chrome, Edge, Safari) y estar en un sitio seguro (HTTPS).");
+                }
+            };
+
             if (!isAuthenticated) return <LoginScreen onLogin={() => setIsAuthenticated(true)} />;
 
             return (
@@ -484,10 +605,7 @@
                                 ))}
                             </nav>
 
-                            <div className="bg-slate-100 p-4 rounded-xl border border-slate-200 text-[11px] text-slate-500">
-                                <strong>Nota Legal:</strong><br/>
-                                El límite del art. 394.3 LEC (un tercio) solo es obligatorio en tasaciones de costas a la parte vencida, no en jura de cuentas propia salvo excepciones.
-                            </div>
+                            {/* NOTA LEGAL ELIMINADA AQUI */}
                         </div>
 
                         {/* CENTER COLUMN */}
@@ -621,7 +739,7 @@
                                                 Aviso Límite Art. 394.3 LEC
                                             </p>
                                             <p className={`text-xs mt-1 mb-2 ${details.cappedByLimit ? 'text-orange-700' : 'text-yellow-700'}`}>
-                                                El importe supera la tercera parte de la cuantía ({details.oneThirdLimit.toLocaleString('es-ES', {maximumFractionDigits:0})}€).
+                                                Revisar si el importe supera la tercera parte de la cuantía ({details.oneThirdLimit.toLocaleString('es-ES', {maximumFractionDigits:0})}€).
                                             </p>
                                             
                                             {/* TOGGLE SWITCH PARA APLICAR LIMITE */}
@@ -644,119 +762,100 @@
                                 </div>
                             )}
 
-                            {/* UNIFIED BREAKDOWN */}
+                            {/* SINGLE BREAKDOWN TABLE */}
                             {details && (
                                 <div className="bg-white p-5 rounded-xl shadow-sm border border-slate-200 text-sm fade-in">
-                                    <h3 className="font-bold text-slate-800 border-b border-slate-200 pb-2 mb-4">DESGLOSE</h3>
-
-                                    {/* Section 1: Scale Breakdown (Only if not fixed) */}
-                                    {!details.isFixed && (
-                                        <div className="mb-6">
-                                            <h4 className="text-xs font-bold text-slate-500 uppercase mb-2">1. Cálculo de la Escala</h4>
-                                            <div className="bg-slate-50 rounded-lg border border-slate-200 overflow-hidden">
-                                                <table className="w-full text-xs">
-                                                    <thead className="bg-slate-100 text-slate-500 border-b border-slate-200">
-                                                        <tr>
-                                                            <th className="px-3 py-2 text-left font-normal">Tramo Cuantía</th>
-                                                            <th className="px-3 py-2 text-center font-normal">%</th>
-                                                            <th className="px-3 py-2 text-right font-normal">Cuota</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody className="divide-y divide-slate-100 text-slate-600">
-                                                        {details.breakdown.map((row, i) => (
-                                                            <tr key={i}>
-                                                                <td className="px-3 py-1.5">{row.range}</td>
-                                                                <td className="px-3 py-1.5 text-center text-blue-500">{row.pct}%</td>
-                                                                <td className="px-3 py-1.5 text-right font-mono">{row.fee.toLocaleString('es-ES', {maximumFractionDigits:2})}€</td>
-                                                            </tr>
-                                                        ))}
-                                                        <tr className="bg-slate-100 font-bold text-slate-700">
-                                                            <td className="px-3 py-2" colSpan="2">Suma Escala</td>
-                                                            <td className="px-3 py-2 text-right font-mono">{details.scaleTotal.toLocaleString('es-ES', {minimumFractionDigits:2})}€</td>
-                                                        </tr>
-                                                    </tbody>
-                                                </table>
-                                            </div>
+                                    <div className="flex justify-between items-center border-b border-slate-200 mb-4 pb-2">
+                                        <div className="text-xs font-bold text-slate-700 uppercase">
+                                            <i className="fas fa-list-ol mr-2 text-blue-500"></i> Desglose Detallado
                                         </div>
-                                    )}
+                                        <div className="relative">
+                                            <button 
+                                                onClick={handleCopyToWord}
+                                                className="bg-blue-50 text-blue-600 hover:bg-blue-100 hover:text-blue-800 text-[10px] font-bold px-3 py-1.5 rounded flex items-center gap-1 transition-all"
+                                                title="Copiar tabla formateada para Word"
+                                            >
+                                                <i className="fas fa-file-word"></i> Copiar Tabla
+                                            </button>
+                                            {copySuccess && (
+                                                <div className="absolute top-full right-0 mt-1 bg-gray-800 text-white text-[10px] px-2 py-1 rounded shadow-lg animate-fade-in whitespace-nowrap z-50">
+                                                    ¡Copiado al portapapeles!
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
 
-                                    {/* Section 2: Final Calculation Table */}
-                                    <div>
-                                        <h4 className="text-xs font-bold text-slate-500 uppercase mb-2">{!details.isFixed ? '2. Ajustes y Totales' : 'Cálculo de Honorarios'}</h4>
-                                        <div className="overflow-x-auto">
-                                            <table className="w-full text-[13px] text-left border-collapse"> 
-                                                <tbody className="divide-y divide-slate-100">
-                                                    {/* Base Row */}
-                                                    {!details.isFixed ? (
-                                                        <tr>
-                                                            <td className="py-2 px-2 text-slate-600">Suma Escala General</td>
-                                                            <td className="py-2 px-2 text-right font-mono">{details.scaleTotal.toLocaleString('es-ES', {minimumFractionDigits:2})} €</td>
-                                                        </tr>
-                                                    ) : (
-                                                        <tr>
-                                                            <td className="py-2 px-2 text-slate-600">Base Fija / Referencia</td>
-                                                            <td className="py-2 px-2 text-right font-mono">{currentProcedure.min.toLocaleString('es-ES', {minimumFractionDigits:2})} €</td>
-                                                        </tr>
-                                                    )}
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full text-sm text-left border-collapse">
+                                            <tbody className="divide-y divide-slate-100">
+                                                {/* HEADER IMPLÍCITO */}
+                                                <tr className="bg-slate-50">
+                                                    <td className="py-2 px-2 font-bold text-slate-600">Concepto</td>
+                                                    <td className="py-2 px-2 font-bold text-slate-600 text-right">Importe</td>
+                                                </tr>
 
-                                                    {/* Adjustment Row */}
+                                                {/* TRAMOS ESCALA */}
+                                                {!details.isFixed && details.breakdown.map((row, i) => (
+                                                    <tr key={i} className="hover:bg-slate-50">
+                                                        <td className="py-2 px-2 text-slate-500">
+                                                            Tramo {row.range} 
+                                                            <span className="text-blue-500 ml-1 font-semibold">({row.pct}%)</span>
+                                                        </td>
+                                                        <td className="py-2 px-2 text-right font-mono text-slate-600">
+                                                            {row.fee.toLocaleString('es-ES', {maximumFractionDigits:2})} €
+                                                        </td>
+                                                    </tr>
+                                                ))}
+
+                                                {/* SUMA ESCALA (si aplica) */}
+                                                {!details.isFixed && (
+                                                    <tr className="bg-slate-50 border-t border-slate-200">
+                                                        <td className="py-2 px-2 font-bold text-slate-600">Suma Escala General</td>
+                                                        <td className="py-2 px-2 text-right font-bold font-mono text-slate-700">{details.scaleTotal.toLocaleString('es-ES', {minimumFractionDigits:2})} €</td>
+                                                    </tr>
+                                                )}
+
+                                                {/* AJUSTE INTERVENCIÓN */}
+                                                <tr>
+                                                    <td className="py-2 px-2 text-slate-500">
+                                                        Ajuste Intervención 
+                                                        <span className="text-blue-600 font-bold ml-1">({customMod}%)</span>
+                                                        <div className="text-[9px] text-slate-400 italic">Porcentaje según trámite o manual</div>
+                                                    </td>
+                                                    <td className="py-2 px-2 text-right font-mono text-blue-600 font-bold">{details.preCapBase.toLocaleString('es-ES', {minimumFractionDigits:2})} €</td>
+                                                </tr>
+
+                                                {/* CORRECCIONES */}
+                                                {details.minApplied && (
+                                                    <tr className="bg-yellow-50">
+                                                        <td className="py-2 px-2 text-yellow-700 font-semibold">Corrección Mínimo</td>
+                                                        <td className="py-2 px-2 text-right font-mono text-yellow-700">{details.effectiveMin.toLocaleString('es-ES')} €</td>
+                                                    </tr>
+                                                )}
+                                                {details.cappedByLimit && (
+                                                    <tr className="bg-orange-50">
+                                                        <td className="py-2 px-2 text-orange-700 font-semibold">Recorte 1/3 (Art 394.3)</td>
+                                                        <td className="py-2 px-2 text-right font-mono text-orange-700">{details.oneThirdLimit.toLocaleString('es-ES', {minimumFractionDigits:2})} €</td>
+                                                    </tr>
+                                                )}
+
+                                                {/* TOTALES FINALES */}
+                                                <tr className="bg-slate-100 border-t-2 border-slate-200">
+                                                    <td className="py-3 px-2 font-bold text-slate-800 text-xs">BASE IMPONIBLE</td>
+                                                    <td className="py-3 px-2 text-right font-bold font-mono text-slate-900 text-sm">{details.finalBase.toLocaleString('es-ES', {minimumFractionDigits:2})} €</td>
+                                                </tr>
+                                                {includeVAT && (
                                                     <tr>
-                                                        <td className="py-2 px-2 text-slate-600">
-                                                            Ajuste Intervención / Escala ({customMod}%)
-                                                            <div className="text-[10px] text-slate-400 italic">Según procedimiento o grado seleccionado</div>
-                                                        </td>
-                                                        <td className="py-2 px-2 text-right font-mono font-semibold text-blue-700">
-                                                            {details.minApplied ? (
-                                                                <span className="line-through text-slate-400 mr-2 text-xs">{(details.scaleTotal * customMod/100).toLocaleString('es-ES', {maximumFractionDigits:0})} €</span>
-                                                            ) : null}
-                                                            {details.preCapBase.toLocaleString('es-ES', {minimumFractionDigits:2})} €
-                                                        </td>
+                                                        <td className="py-2 px-2 text-slate-500">IVA (21%)</td>
+                                                        <td className="py-2 px-2 text-right font-mono">{details.vat.toLocaleString('es-ES', {minimumFractionDigits:2})} €</td>
                                                     </tr>
-
-                                                    {/* Minimum Alert Row */}
-                                                    {details.minApplied && (
-                                                        <tr className="bg-yellow-50">
-                                                            <td className="py-2 px-2 text-yellow-800 font-semibold">
-                                                                <i className="fas fa-arrow-up mr-1"></i> Aplicación Mínimo
-                                                                <div className="text-[10px] text-yellow-600 font-normal">El cálculo era inferior al mínimo del procedimiento</div>
-                                                            </td>
-                                                            <td className="py-2 px-2 text-right font-mono text-yellow-800 font-bold">{details.effectiveMin.toLocaleString('es-ES', {minimumFractionDigits:2})} €</td>
-                                                        </tr>
-                                                    )}
-
-                                                    {/* Limit 1/3 Row */}
-                                                    {details.cappedByLimit && (
-                                                        <tr className="bg-orange-50 border-l-4 border-orange-400">
-                                                            <td className="py-2 px-2 text-orange-800 font-semibold">
-                                                                <i className="fas fa-scissors mr-1"></i> Límite Art. 394.3 LEC (1/3)
-                                                                <div className="text-[10px] text-orange-600 font-normal">Reducción aplicada por superar el tercio de la cuantía</div>
-                                                            </td>
-                                                            <td className="py-2 px-2 text-right font-mono text-orange-800 font-bold">{details.oneThirdLimit.toLocaleString('es-ES', {minimumFractionDigits:2})} €</td>
-                                                        </tr>
-                                                    )}
-
-                                                    {/* Taxable Base */}
-                                                    <tr className="bg-slate-100 border-t-2 border-slate-200">
-                                                        <td className="py-3 px-2 font-bold text-slate-800 text-sm">BASE IMPONIBLE (Honorarios Netos)</td>
-                                                        <td className="py-3 px-2 text-right font-bold font-mono text-slate-900 text-sm">{details.finalBase.toLocaleString('es-ES', {minimumFractionDigits:2})} €</td>
-                                                    </tr>
-
-                                                    {/* VAT */}
-                                                    {includeVAT && (
-                                                        <tr>
-                                                            <td className="py-2 px-2 text-slate-500">IVA (21%)</td>
-                                                            <td className="py-2 px-2 text-right font-mono text-slate-600">{details.vat.toLocaleString('es-ES', {minimumFractionDigits:2})} €</td>
-                                                        </tr>
-                                                    )}
-
-                                                    {/* Final Total */}
-                                                    <tr className="bg-blue-600 text-white">
-                                                        <td className="py-3 px-3 font-bold uppercase">TOTAL A PERCIBIR</td>
-                                                        <td className="py-3 px-3 text-right font-bold font-mono text-lg">{details.grandTotal.toLocaleString('es-ES', {minimumFractionDigits:2})} €</td>
-                                                    </tr>
-                                                </tbody>
-                                            </table>
-                                        </div>
+                                                )}
+                                                <tr className="bg-blue-50 border-t border-blue-100">
+                                                    <td className="py-3 px-2 font-bold text-blue-800">TOTAL A PERCIBIR</td>
+                                                    <td className="py-3 px-2 text-right font-bold font-mono text-blue-800 text-base">{details.grandTotal.toLocaleString('es-ES', {minimumFractionDigits:2})} €</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
                                     </div>
                                 </div>
                             )}
