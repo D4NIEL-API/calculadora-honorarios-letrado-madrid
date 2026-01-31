@@ -4,114 +4,33 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CALCULADORA HONORARIOS LETRADO (MADRID) POR DBS</title>
-    <!-- React y Babel -->
     <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Markdown -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <!-- FontAwesome -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
         body { font-family: 'Segoe UI', system-ui, sans-serif; background-color: #f1f5f9; }
-        
-        /* Botones Modo */
-        .mode-btn-active { 
-            background-color: #1e3a8a; 
-            color: #ffffff; 
-            border: 1px solid #1e3a8a;
-            box-shadow: 0 4px 6px -1px rgba(30, 58, 138, 0.4); 
-            font-weight: 700;
-        }
-        .mode-btn-inactive { 
-            background-color: white; 
-            color: #475569; 
-            border: 1px solid #cbd5e1; 
-        }
-        .mode-btn-inactive:hover { 
-            background-color: #f8fafc; 
-            border-color: #94a3b8;
-            color: #1e293b;
-        }
-
-        .scenario-btn { transition: all 0.2s; }
-        .scenario-btn:hover { transform: translateY(-1px); }
+        .mode-btn-active { background-color: #1e3a8a; color: #ffffff; border: 1px solid #1e3a8a; box-shadow: 0 4px 6px -1px rgba(30, 58, 138, 0.4); font-weight: 700; }
+        .mode-btn-inactive { background-color: white; color: #475569; border: 1px solid #cbd5e1; }
+        .mode-btn-inactive:hover { background-color: #f8fafc; border-color: #94a3b8; color: #1e293b; }
         .fade-in { animation: fadeIn 0.4s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        
-        /* Chat Styles - Floating Window */
-        .chat-window {
-            position: fixed;
-            bottom: 90px; /* Above the FAB */
-            left: 24px;
-            width: 350px;
-            height: 500px;
-            background-color: white;
-            border-radius: 16px;
-            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
-            border: 1px solid #e2e8f0;
-            z-index: 50;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-            animation: slideUp 0.3s ease-out;
-        }
-        @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-
-        .chat-fab {
-            position: fixed;
-            bottom: 24px;
-            left: 24px;
-            background-color: #2563eb;
-            color: white;
-            padding: 12px 20px;
-            border-radius: 9999px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-            cursor: pointer;
-            z-index: 50;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            transition: transform 0.2s, background-color 0.2s;
-            font-weight: 600;
-        }
-        .chat-fab:hover { background-color: #1d4ed8; transform: scale(1.05); }
-
+        /* Chat Styles */
+        .chat-window { position: fixed; bottom: 90px; left: 24px; width: 350px; height: 500px; background-color: white; border-radius: 16px; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1); border: 1px solid #e2e8f0; z-index: 50; display: flex; flex-direction: column; overflow: hidden; }
+        .chat-fab { position: fixed; bottom: 24px; left: 24px; background-color: #2563eb; color: white; padding: 12px 20px; border-radius: 9999px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); cursor: pointer; z-index: 50; display: flex; align-items: center; gap: 8px; font-weight: 600; }
         .chat-bubble { max-width: 85%; padding: 10px 14px; border-radius: 12px; font-size: 0.85rem; line-height: 1.5; margin-bottom: 8px; }
-        .chat-user { background-color: #1e3a8a; color: white; align-self: flex-end; border-bottom-right-radius: 2px; }
-        .chat-ai { background-color: #f1f5f9; color: #334155; border: 1px solid #e2e8f0; align-self: flex-start; border-bottom-left-radius: 2px; }
-        
+        .chat-user { background-color: #1e3a8a; color: white; align-self: flex-end; }
+        .chat-ai { background-color: #f1f5f9; color: #334155; align-self: flex-start; }
         .typing-dot { width: 5px; height: 5px; background: #94a3b8; border-radius: 50%; animation: typing 1.4s infinite ease-in-out both; margin: 0 2px; }
-        .typing-dot:nth-child(1) { animation-delay: -0.32s; }
-        .typing-dot:nth-child(2) { animation-delay: -0.16s; }
         @keyframes typing { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1); } }
-
-        /* Slider & Tooltip */
+        /* Slider */
         input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 16px; width: 16px; border-radius: 50%; background: #1e3a8a; cursor: pointer; margin-top: -6px; box-shadow: 0 1px 3px rgba(0,0,0,0.3); }
         input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 4px; cursor: pointer; background: #cbd5e1; border-radius: 2px; }
-        .tooltip { visibility: hidden; width: 220px; background-color: #334155; color: #fff; text-align: center; border-radius: 6px; padding: 8px; position: absolute; z-index: 50; bottom: 125%; left: 50%; margin-left: -110px; opacity: 0; transition: opacity 0.3s; font-size: 11px; font-weight: normal; line-height: 1.4; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        .has-tooltip:hover .tooltip { visibility: visible; opacity: 1; }
-        .tooltip::after { content: ""; position: absolute; top: 100%; left: 50%; margin-left: -5px; border-width: 5px; border-style: solid; border-color: #334155 transparent transparent transparent; }
-        
-        .markdown-chat p { margin-bottom: 0.5em; }
-        .markdown-chat ul { list-style-type: disc; padding-left: 1.2em; margin-bottom: 0.5em; }
-        .markdown-chat strong { font-weight: 700; color: #1e3a8a; }
-
-        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-        
-        /* Toggle Switch */
-        .toggle-checkbox:checked {
-            right: 0;
-            border-color: #16a34a;
-        }
-        .toggle-checkbox:checked + .toggle-label {
-            background-color: #16a34a;
-        }
+        /* Toggle */
+        .toggle-checkbox:checked { right: 0; border-color: #16a34a; }
+        .toggle-checkbox:checked + .toggle-label { background-color: #16a34a; }
     </style>
 </head>
 <body>
@@ -125,18 +44,15 @@
 
         async function chatWithGemini(messages) {
             try {
-                // Solo enviamos el historial de conversación. La inteligencia reside en el servidor.
                 const contents = messages.map(msg => ({
                     role: msg.role === 'user' ? 'user' : 'model',
                     parts: [{ text: msg.content }]
                 }));
-
                 const response = await fetch(BACKEND_URL, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ contents })
                 });
-
                 if (!response.ok) throw new Error("Error servidor");
                 const data = await response.json();
                 return data.candidates?.[0]?.content?.parts?.[0]?.text || "Error al procesar la respuesta.";
@@ -157,89 +73,103 @@
         ];
 
         const MODES = {
-            CIVIL: { id: 'CIVIL', label: 'Civil / Mercantil', icon: 'fa-scale-balanced', color: 'text-blue-600' },
-            PENAL: { id: 'PENAL', label: 'Penal', icon: 'fa-gavel', color: 'text-red-600' },
-            CONTENCIOSO: { id: 'CONTENCIOSO', label: 'Contencioso-Adm.', icon: 'fa-building-columns', color: 'text-orange-600' },
-            SOCIAL: { id: 'SOCIAL', label: 'Social (Laboral)', icon: 'fa-users', color: 'text-green-600' },
+            CIVIL: { id: 'CIVIL', label: 'Civil / Mercantil', icon: 'fa-scale-balanced' },
+            PENAL: { id: 'PENAL', label: 'Penal', icon: 'fa-gavel' },
+            CONTENCIOSO: { id: 'CONTENCIOSO', label: 'Contencioso-Adm.', icon: 'fa-building-columns' },
+            SOCIAL: { id: 'SOCIAL', label: 'Social (Laboral)', icon: 'fa-users' },
         };
 
         const PROCEDURES = {
             CIVIL: [
                { category: 'Declarativos' },
-                { id: 'c4_ordinario', label: 'Juicio Ordinario (Criterio 4)', min: 2100, mod: 100, explanation: 'Tramitación íntegra. Criterio 4.' },
-                { id: 'c5_verbal', label: 'Juicio Verbal (Criterio 5)', min: 1200, mod: 100, explanation: 'Tramitación íntegra. Criterio 5.' },
-                { id: 'c5_desahucio_no_op', label: 'Desahucio (Sin Oposición)', min: 600, mod: 50, explanation: 'Reducción al 50% por falta de oposición. Criterio 5.2.B.' },
-                { id: 'c5_desahucio_op', label: 'Desahucio (Con Vista)', min: 900, mod: 100, explanation: '100% Escala al celebrarse vista. Criterio 5.2.C.' },
-                { id: 'c23_monitorio', label: 'Monitorio (Sin Oposición)', min: 400, mod: 25, explanation: 'Se aplica prudencialmente 25% Escala o fijo 400€. Criterio 23.' },
-                { id: 'c24_cambiario', label: 'Cambiario (Con Oposición)', min: 1200, mod: 50, explanation: 'Solo fase de oposición. Criterio 24.' },
-                { id: 'c18_familia', label: 'Familia (Contencioso)', min: 2500, mod: 100, isFixedBase: true, explanation: 'Base fija de referencia. Criterio 18.' },
-
+                { id: 'c4_ordinario', label: 'Juicio Ordinario (Criterio 4)', min: 2100, mod: 100 },
+                { id: 'c5_verbal', label: 'Juicio Verbal (Criterio 5)', min: 1200, mod: 100 },
+                { id: 'c5_desahucio_no_op', label: 'Desahucio (Sin Oposición)', min: 600, mod: 50 },
+                { id: 'c5_desahucio_op', label: 'Desahucio (Con Vista)', min: 900, mod: 100 },
+                { id: 'c23_monitorio', label: 'Monitorio (Sin Oposición)', min: 400, mod: 25 },
+                { id: 'c18_familia', label: 'Familia (Contencioso)', min: 2500, mod: 100, isFixedBase: true },
                 { category: 'Ejecuciones' },
-                { id: 'c15_ejec_din_op', label: 'Ejec. Dineraria (Con Oposición)', min: 1200, mod: 50, explanation: '50% Escala si hay oposición/consignación. Criterio 15.A.3.' },
-                { id: 'c15_ejec_din_integra', label: 'Ejec. Vía Apremio (Completa)', min: 1200, mod: 75, explanation: '75% Escala sin oposición (hasta subasta). Criterio 15.A.4.' },
-                { id: 'c15_hipotecario', label: 'Ejecución Hipotecaria', min: 1200, mod: 75, explanation: 'Base: Menor entre Deuda y Resp. Hipotecaria. Criterio 15.D.' },
-                { id: 'c15_tit_no_jud', label: 'Ejec. Título No Judicial', min: 600, mod: 50, explanation: '50% Escala sin oposición. Criterio 15.C.' },
-
+                { id: 'c15_ejec_din_op', label: 'Ejec. Dineraria (Con Oposición)', min: 1200, mod: 50 },
+                { id: 'c15_ejec_din_integra', label: 'Ejec. Vía Apremio (Completa)', min: 1200, mod: 75 },
+                { id: 'c15_hipotecario', label: 'Ejecución Hipotecaria', min: 1200, mod: 75 },
                 { category: 'Recursos' },
-                { id: 'c7_apelacion', label: 'Apelación (Audiencia Provincial)', min: 1200, mod: 50, explanation: '50% de la Escala. Criterio 7.' },
-                { id: 'c9_casacion', label: 'Casación / Extraordinario', min: 3200, mod: 85, explanation: '85% de la Escala. Criterio 9.' },
-
+                { id: 'c7_apelacion', label: 'Apelación (Audiencia Provincial)', min: 1200, mod: 50 },
+                { id: 'c9_casacion', label: 'Casación / Extraordinario', min: 3200, mod: 85 },
                 { category: 'Incidentes' },
-                { id: 'c2_incidente', label: 'Incidente / Tasación Costas', min: 450, mod: 20, explanation: '20% de la Escala. Criterio 2.' },
+                { id: 'c2_incidente', label: 'Incidente / Tasación Costas', min: 450, mod: 20 },
             ],
             PENAL: [
-                { category: 'Responsabilidad Civil (Título II)' },
-                { id: 'c85_rc_instancia', label: 'Resp. Civil en Sentencia', min: 0, mod: 70, explanation: '70% de la Escala Civil sobre la indemnización. Criterio 85.' },
-                { id: 'c86_rc_apelacion', label: 'Resp. Civil en Apelación', min: 0, mod: 35, explanation: '50% de lo correspondiente a la instancia (aprox 35% total). Criterio 86.' },
-
-                { category: 'Actuaciones Penales (Referencias Fijas)' },
-                { id: 'c35_instruccion', label: 'Instrucción / Escritos Acusación', min: 550, mod: 100, isFixedBase: true, explanation: 'Valor ref. escrito acusación/defensa (Abreviado). Criterio 35.' },
-                { id: 'c37_juicio_oral', label: 'Asistencia Juicio Oral (Penal)', min: 650, mod: 100, isFixedBase: true, explanation: 'Valor ref. asistencia a vista en Juzgado Penal. Criterio 37.' },
+                { id: 'c85_rc_instancia', label: 'Resp. Civil en Sentencia', min: 0, mod: 70 },
+                { id: 'c35_instruccion', label: 'Instrucción / Escritos Acusación', min: 550, mod: 100, isFixedBase: true },
+                { id: 'c37_juicio_oral', label: 'Asistencia Juicio Oral (Penal)', min: 650, mod: 100, isFixedBase: true },
             ],
             CONTENCIOSO: [
-                { category: 'Procedimientos (Título III)' },
-                { id: 'c89_ordinario', label: 'Procedimiento Ordinario', min: 2100, mod: 100, explanation: 'Escala completa. Min 2.100€. Criterio 89.' },
-                { id: 'c90_abreviado', label: 'Procedimiento Abreviado', min: 1200, mod: 100, explanation: 'Escala completa. Min 1.200€. Criterio 90.' },
-                { id: 'c93_apelacion_cont', label: 'Apelación Contencioso', min: 1200, mod: 50, explanation: '50% de la Escala. Min 1.200€. Criterio 93.' },
+                { id: 'c89_ordinario', label: 'Procedimiento Ordinario', min: 2100, mod: 100 },
+                { id: 'c90_abreviado', label: 'Procedimiento Abreviado', min: 1200, mod: 100 },
+                { id: 'c93_apelacion_cont', label: 'Apelación Contencioso', min: 1200, mod: 50 },
             ],
             SOCIAL: [
-                { category: 'Procedimientos (Título IV)' },
-                { id: 'c99_cantidad', label: 'Reclamación de Cantidad', min: 600, mod: 100, explanation: 'Escala completa sobre lo reclamado. Min 600€. Criterio 99.' },
-                { id: 'c101_despido', label: 'Despido', min: 900, mod: 100, explanation: 'Escala sobre Indemnización + Salarios. Min 900€. Criterio 101.' },
-                { id: 'c109_suplicacion', label: 'Recurso de Suplicación', min: 1200, mod: 50, explanation: '50% de la Escala. Min 1.200€. Criterio 109.' },
+                { id: 'c99_cantidad', label: 'Reclamación de Cantidad', min: 600, mod: 100 },
+                { id: 'c101_despido', label: 'Despido', min: 900, mod: 100 },
+                { id: 'c109_suplicacion', label: 'Recurso de Suplicación', min: 1200, mod: 50 },
             ],
         };
 
-        const SCENARIOS = [
-            { id: 'complete', pct: 100, label: 'Tramitación Completa', desc: 'Caso estándar: Todas las fases hasta sentencia.' },
-            { id: 'trans', pct: 60, label: 'Transacción (Acuerdo)', desc: 'Terminación por acuerdo homologado (aprox 60% trabajo).' },
-            { id: 'allan', pct: 50, label: 'Allanamiento / Desist.', desc: 'Terminación anormal (Allanamiento o Desistimiento).' },
-            { id: 'early', pct: 25, label: 'Terminación Inicial', desc: 'Terminación en fase muy temprana, sin alegaciones.' }
-        ];
-        
-        function getAmountHelp(jurisdiction, procId) {
-            if (jurisdiction === 'PENAL') return "Indique la cuantía de la Responsabilidad Civil solicitada (si la hubiere). Si solo es defensa penal sin contenido económico, deje 0.";
-            if (jurisdiction === 'SOCIAL') {
-                if (procId === 'c101_despido') return "Suma de la Indemnización bruta + Salarios de tramitación.";
-                if (procId === 'c99_cantidad') return "Importe bruto total reclamado.";
+        // --- CALCULADORA CORE (Retorna objeto) ---
+        function calculateConcept(amount, procId, jurisdiction, modPct) {
+            const proc = PROCEDURES[jurisdiction].find(p => p.id === procId) || PROCEDURES[jurisdiction][1];
+            const numericAmount = parseFloat(amount) || 0;
+            
+            // 1. Cálculo Base
+            let calculatedBase = 0;
+
+            if (proc.isFixedBase) {
+                // Base fija (Ej: Penal, Familia sin cuantía)
+                calculatedBase = proc.min * (modPct / 100);
+            } else {
+                // Escala 2013
+                let remaining = numericAmount;
+                let scaleAccumulator = 0;
+                let prevLimit = 0;
+
+                for (let tier of SCALE_2013) {
+                    if (remaining <= 0) break;
+                    let amountInTier = (tier.limit === 2700000 && numericAmount > 2700000) ? numericAmount - prevLimit : (numericAmount > tier.limit) ? (tier.limit - prevLimit) : (numericAmount - prevLimit);
+                    const fee = amountInTier * (tier.percent / 100);
+                    if (amountInTier > 0) {
+                        scaleAccumulator += fee;
+                        remaining -= amountInTier;
+                    }
+                    prevLimit = tier.limit;
+                }
+                
+                // Aplicar porcentaje del trámite
+                calculatedBase = scaleAccumulator * (modPct / 100);
+                
+                // Aplicar Mínimos
+                let effectiveMin = proc.min * (modPct / 100);
+                if (effectiveMin < 100 && numericAmount > 0) effectiveMin = 100; // Mínimo absoluto
+                if (calculatedBase < effectiveMin && numericAmount > 0) calculatedBase = effectiveMin;
             }
-            if (jurisdiction === 'CONTENCIOSO') return "Cuantía del recurso o interés económico litigioso.";
-            return "Cuantía del procedimiento determinada según las reglas de la LEC (Art. 251 y ss). Para cuantía indeterminada, usar 18.000€ (Criterio 1).";
+
+            return {
+                base: calculatedBase,
+                procLabel: proc.label,
+                amount: numericAmount
+            };
         }
 
-        // --- CHAT COMPONENT (FLOATING) ---
+        // --- CHAT COMPONENT ---
         function ChatFloating() {
             const [isOpen, setIsOpen] = useState(false);
             const [messages, setMessages] = useState([
-                { role: 'model', content: 'Hola, soy un asistente experto en Criterios de Honorarios de letrados (Madrid). ¿En qué te puedo ayudar?' }
+                { role: 'model', content: 'Hola, soy tu Auditor de Honorarios. ¿En qué te puedo ayudar? (Ej: "Tengo un desahucio con oposición de 600€ de renta")' }
             ]);
             const [inputValue, setInputValue] = useState('');
             const [isLoading, setIsLoading] = useState(false);
             const messagesEndRef = useRef(null);
 
-            useEffect(() => {
-                if (isOpen) messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-            }, [messages, isOpen]);
+            useEffect(() => { if (isOpen) messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages, isOpen]);
 
             const handleSend = async (e) => {
                 e.preventDefault();
@@ -255,17 +185,17 @@
 
             return (
                 <>
-                    <button onClick={() => setIsOpen(!isOpen)} className="chat-fab fixed bottom-6 left-6 bg-blue-600 text-white px-5 py-3 rounded-full shadow-lg flex items-center gap-2 hover:bg-blue-700 transition-transform hover:scale-105 z-50">
+                    <button onClick={() => setIsOpen(!isOpen)} className="chat-fab">
                         <i className="fas fa-comment-dots text-xl"></i>
-                        <span className="font-bold text-sm">¿Tienes dudas?</span>
+                        <span className="font-bold text-sm">Asistente Jurídico</span>
                     </button>
                     {isOpen && (
-                        <div className="chat-window fixed bottom-20 left-6 w-80 md:w-96 h-[450px] bg-white rounded-2xl shadow-2xl flex flex-col border border-slate-200 overflow-hidden animate-fade-in z-50">
+                        <div className="chat-window">
                             <div className="bg-slate-800 text-white p-3 border-b border-slate-700 flex justify-between items-center">
-                                <h3 className="font-bold text-sm flex items-center"><i className="fas fa-robot mr-2 text-blue-400"></i> Asistente</h3>
+                                <h3 className="font-bold text-sm flex items-center"><i className="fas fa-robot mr-2 text-blue-400"></i> Auditor IA</h3>
                                 <button onClick={() => setIsOpen(false)} className="hover:text-blue-300 transition"><i className="fas fa-times"></i></button>
                             </div>
-                            <div className="flex-1 overflow-y-auto p-4 bg-slate-50 space-y-3 custom-scrollbar">
+                            <div className="flex-1 overflow-y-auto p-4 bg-slate-50 space-y-3">
                                 {messages.map((msg, idx) => (
                                     <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                                         <div className={`chat-bubble ${msg.role === 'user' ? 'chat-user shadow-md' : 'chat-ai shadow-sm markdown-chat'}`}>
@@ -273,14 +203,12 @@
                                         </div>
                                     </div>
                                 ))}
-                                {isLoading && <div className="flex justify-start"><div className="bg-white border border-slate-200 rounded-2xl rounded-bl-none p-3 shadow-sm flex gap-1"><div className="typing-dot"></div><div className="typing-dot"></div><div className="typing-dot"></div></div></div>}
+                                {isLoading && <div className="flex justify-start"><div className="bg-white p-3 rounded-2xl rounded-bl-none shadow-sm flex gap-1"><div className="typing-dot"></div><div className="typing-dot"></div><div className="typing-dot"></div></div></div>}
                                 <div ref={messagesEndRef} />
                             </div>
-                            <form onSubmit={handleSend} className="p-3 bg-white border-t border-slate-200">
-                                <div className="relative">
-                                    <input type="text" value={inputValue} onChange={(e) => setInputValue(e.target.value)} placeholder="Escribe tu consulta..." className="w-full pl-4 pr-10 py-2.5 bg-slate-100 border-none rounded-full text-xs focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all outline-none" />
-                                    <button type="submit" disabled={!inputValue.trim() || isLoading} className="absolute right-1 top-1 w-7 h-7 bg-blue-600 text-white rounded-full flex items-center justify-center hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm"><i className="fas fa-paper-plane text-xs"></i></button>
-                                </div>
+                            <form onSubmit={handleSend} className="p-3 bg-white border-t border-slate-200 relative">
+                                <input type="text" value={inputValue} onChange={(e) => setInputValue(e.target.value)} placeholder="Consulta tu caso..." className="w-full pl-4 pr-10 py-2.5 bg-slate-100 border-none rounded-full text-xs focus:ring-2 focus:ring-blue-500 outline-none" />
+                                <button type="submit" disabled={!inputValue.trim() || isLoading} className="absolute right-4 top-4 text-blue-600"><i className="fas fa-paper-plane"></i></button>
                             </form>
                         </div>
                     )}
@@ -291,597 +219,234 @@
         // --- LOGIN ---
         function LoginScreen({ onLogin }) {
             const [password, setPassword] = useState("");
-            const [error, setError] = useState(false);
-            const handleSubmit = (e) => {
-                e.preventDefault();
-                if (password === "DBS26") { onLogin(); } else { setError(true); setPassword(""); }
-            };
+            const handleSubmit = (e) => { e.preventDefault(); if (password === "DBS26") onLogin(); };
             return (
                 <div className="min-h-screen flex items-center justify-center bg-slate-100 p-4">
-                    <div className="bg-white p-8 rounded-2xl shadow-xl w-full max-w-sm border border-slate-200 text-center">
+                    <form onSubmit={handleSubmit} className="bg-white p-8 rounded-2xl shadow-xl w-full max-w-sm text-center">
                         <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6 text-blue-600 text-2xl"><i className="fas fa-lock"></i></div>
-                        <h2 className="text-xl font-bold text-slate-800 mb-2">Acceso Restringido</h2>
-                        <form onSubmit={handleSubmit} className="space-y-4">
-                            <input type="password" value={password} onChange={(e) => { setPassword(e.target.value); setError(false); }} placeholder="Contraseña" className={`w-full p-3 rounded-lg border text-center font-mono outline-none focus:ring-2 transition-all ${error ? 'border-red-300 bg-red-50 focus:ring-red-200' : 'border-slate-300 focus:border-blue-500 focus:ring-blue-200'}`} />
-                            {error && <p className="text-red-500 text-xs mt-2 animate-pulse">Contraseña incorrecta</p>}
-                            <button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg shadow-md transition-transform transform active:scale-95">Entrar</button>
-                        </form>
-                    </div>
+                        <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Contraseña" className="w-full p-3 mb-4 rounded-lg border text-center font-mono focus:ring-2 focus:ring-blue-500" />
+                        <button type="submit" className="w-full bg-blue-600 text-white font-bold py-3 rounded-lg">Entrar</button>
+                    </form>
                 </div>
             );
         }
 
         function App() {
             const [isAuthenticated, setIsAuthenticated] = useState(false);
+            
+            // ESTADO MULTI-CONCEPTO
+            const [concepts, setConcepts] = useState([]); // Lista de conceptos agregados
+            const [beneficiaryType, setBeneficiaryType] = useState('PHYSICAL'); // 'PHYSICAL' | 'LEGAL'
+            const [applyLimit394, setApplyLimit394] = useState(false);
+            
+            // ESTADO FORMULARIO (INPUTS)
             const [jurisdiction, setJurisdiction] = useState('CIVIL');
             const [selectedProcId, setSelectedProcId] = useState('c4_ordinario'); 
             const [amount, setAmount] = useState('');
             const [customMod, setCustomMod] = useState(100);
-            const [selectedScenario, setSelectedScenario] = useState(SCENARIOS[0]);
-            const [includeVAT, setIncludeVAT] = useState(true);
-            const [applyLimit, setApplyLimit] = useState(false);
-            const [details, setDetails] = useState(null);
-            const [copySuccess, setCopySuccess] = useState(false);
 
-            // Actualizar el procedimiento seleccionado por defecto al cambiar jurisdicción
+            // Defaults al cambiar jurisdicción
             useEffect(() => {
-                const firstProc = PROCEDURES[jurisdiction].find(p => p.id);
-                if (firstProc) setSelectedProcId(firstProc.id);
-                setApplyLimit(false); 
+                const firstProc = PROCEDURES[jurisdiction][0]?.category ? PROCEDURES[jurisdiction][1] : PROCEDURES[jurisdiction][0];
+                if (firstProc) { setSelectedProcId(firstProc.id); setCustomMod(firstProc.mod); }
             }, [jurisdiction]);
 
-            // Efecto para actualizar el slider automáticamente según el procedimiento
             useEffect(() => {
                 const proc = PROCEDURES[jurisdiction].find(p => p.id === selectedProcId);
-                if (proc) {
-                    setCustomMod(proc.mod); 
-                    
-                    // LÓGICA MODIFICADA: Si es automático, NO seleccionamos ningún "Escenario Manual"
-                    // Creamos un estado "neutro" para mostrar la info pero no iluminar botones.
-                    setSelectedScenario({
-                        id: 'proc_default', // ID que no coincide con los botones manuales
-                        pct: proc.mod,
-                        label: 'Estándar Procedimiento',
-                        desc: `Escala ajustada automáticamente al ${proc.mod}% según Criterio para ${proc.label}.`,
-                        color: 'bg-blue-50 text-blue-800'
-                    });
+                if (proc) setCustomMod(proc.mod);
+            }, [selectedProcId]);
 
-                    setApplyLimit(false); 
-                }
-            }, [selectedProcId, jurisdiction]);
-
-            const currentProcedure = useMemo(() => {
-                return PROCEDURES[jurisdiction].find(p => p.id === selectedProcId) || {};
-            }, [jurisdiction, selectedProcId]);
-
-            const amountHelpText = useMemo(() => getAmountHelp(jurisdiction, selectedProcId), [jurisdiction, selectedProcId]);
-
-            const handleSliderChange = (e) => {
-                const val = Number(e.target.value);
-                setCustomMod(val);
-                // Al mover el slider manualmente, deseleccionamos los botones de escenario
-                setSelectedScenario({
-                    id: 'custom',
-                    pct: val,
-                    label: 'Personalizado',
-                    desc: `Ajuste manual al ${val}% definido por el usuario.`,
-                    color: 'bg-gray-50 text-gray-700'
-                });
+            // ACCIONES
+            const addConcept = () => {
+                const result = calculateConcept(amount, selectedProcId, jurisdiction, customMod);
+                const newConcept = {
+                    id: Date.now(),
+                    label: result.procLabel,
+                    amount: result.amount,
+                    mod: customMod,
+                    fee: result.base
+                };
+                setConcepts([...concepts, newConcept]);
+                setAmount(''); // Reset input
             };
 
-            const handleScenarioClick = (scenario) => {
-                setCustomMod(scenario.pct);
-                setSelectedScenario(scenario);
+            const removeConcept = (id) => {
+                setConcepts(concepts.filter(c => c.id !== id));
             };
 
-            // CORE CALCULATION
-            useEffect(() => {
-                if (!currentProcedure.id) return;
-                const numericAmount = parseFloat(amount) || 0;
-                const oneThirdLimit = (numericAmount > 0) ? (numericAmount / 3) : Infinity;
+            // CÁLCULOS GLOBALES
+            const totalFees = concepts.reduce((acc, curr) => acc + curr.fee, 0);
+            
+            // Lógica Art 394.3: Límite es 1/3 de la cuantía PRINCIPAL. 
+            // SIMPLIFICACIÓN: Tomamos la cuantía mayor como la "Principal" para el límite.
+            const maxAmount = concepts.reduce((max, curr) => (curr.amount > max ? curr.amount : max), 0);
+            const limitValue = maxAmount / 3;
+            
+            let finalBase = totalFees;
+            let isCapped = false;
 
-                if (currentProcedure.isFixedBase) {
-                    const base = currentProcedure.min;
-                    const adjustedBase = base * (customMod / 100);
-                    
-                    let finalBase = adjustedBase;
-                    let capped = false;
-                    const isOverLimit = finalBase > oneThirdLimit;
-                    
-                    if (isOverLimit && applyLimit) { finalBase = oneThirdLimit; capped = true; }
-                    
-                    const vat = finalBase * 0.21;
-                    
-                    setDetails({
-                        breakdown: [], scaleTotal: 0, reducedByCrit: base, minApplied: false, effectiveMin: base,
-                        preCapBase: adjustedBase, finalBase, cappedByLimit: capped, oneThirdLimit, isOverLimit, vat,
-                        grandTotal: includeVAT ? finalBase + vat : finalBase,
-                        isFixed: true
-                    });
-                    return;
-                }
+            if (applyLimit394 && maxAmount > 0 && totalFees > limitValue) {
+                finalBase = limitValue;
+                isCapped = true;
+            }
 
-                let remaining = numericAmount;
-                let scaleAccumulator = 0;
-                let breakdownList = [];
-                let prevLimit = 0;
+            // Lógica IVA
+            const includeVAT = beneficiaryType === 'PHYSICAL';
+            const vatAmount = includeVAT ? finalBase * 0.21 : 0;
+            const grandTotal = finalBase + vatAmount;
 
-                for (let tier of SCALE_2013) {
-                    if (remaining <= 0) break;
-                    let amountInTier = (tier.limit === 2700000 && numericAmount > 2700000) ? numericAmount - prevLimit : (amountInTier = (numericAmount > tier.limit) ? (tier.limit - prevLimit) : (numericAmount - prevLimit));
-                    const fee = amountInTier * (tier.percent / 100);
-                    if (amountInTier > 0) {
-                        breakdownList.push({ range: `${prevLimit.toLocaleString()} - ${tier.limit === 2700000 ? '...' : tier.limit.toLocaleString()}`, pct: tier.percent, amount: amountInTier, fee: fee });
-                        scaleAccumulator += fee;
-                        remaining -= amountInTier;
-                    }
-                    prevLimit = tier.limit;
-                }
-
-                const valueAfterManualMod = scaleAccumulator * (customMod / 100);
-                
-                let effectiveMin = currentProcedure.min * (customMod / 100); 
-                if (effectiveMin < 100 && numericAmount > 0) effectiveMin = 100;
-
-                let calculatedBase = valueAfterManualMod;
-                let minApplied = false;
-                if (calculatedBase < effectiveMin && numericAmount > 0) { calculatedBase = effectiveMin; minApplied = true; }
-
-                let finalBase = calculatedBase;
-                let capped = false;
-                const isOverLimit = numericAmount > 0 && finalBase > oneThirdLimit;
-                
-                if (isOverLimit && applyLimit) { finalBase = oneThirdLimit; capped = true; }
-
-                const vat = finalBase * 0.21;
-                setDetails({ 
-                    breakdown: breakdownList, scaleTotal: scaleAccumulator, reducedByCrit: 0, 
-                    effectiveMin, minApplied, 
-                    preCapBase: calculatedBase, finalBase, cappedByLimit: capped, oneThirdLimit, isOverLimit, vat, 
-                    grandTotal: includeVAT ? finalBase + vat : finalBase,
-                    isFixed: false 
+            // COPIAR
+            const handleCopy = () => {
+                // Implementación simple para clipboard
+                let text = "DESGLOSE DE HONORARIOS\n\n";
+                concepts.forEach(c => {
+                    text += `${c.label} (${c.amount}€ al ${c.mod}%): ${c.fee.toFixed(2)}€\n`;
                 });
-
-            }, [amount, currentProcedure, customMod, includeVAT, applyLimit]);
-
-            // --- FUNCTION TO COPY TO WORD (HTML TABLE) ---
-            const handleCopyToWord = async () => {
-                if (!details) return;
-
-                // Estilos CSS en línea para garantizar compatibilidad con Word
-                const tableStyle = "border-collapse: collapse; width: 100%; font-family: 'Segoe UI', Arial, sans-serif; font-size: 10pt; color: #333;";
-                const thStyle = "border: 1px solid #94a3b8; background-color: #f1f5f9; padding: 8px; text-align: left; font-weight: bold; color: #1e3a8a;";
-                const thRightStyle = "border: 1px solid #94a3b8; background-color: #f1f5f9; padding: 8px; text-align: right; font-weight: bold; color: #1e3a8a;";
-                const tdStyle = "border: 1px solid #cbd5e1; padding: 8px; text-align: left;";
-                const tdRightStyle = "border: 1px solid #cbd5e1; padding: 8px; text-align: right; font-family: Consolas, monospace;";
-                const strongStyle = "font-weight: bold; color: #000;";
-
-                // Construcción de la tabla HTML
-                let htmlRows = "";
-
-                if (!details.isFixed) {
-                   // Filas del desglose de la escala
-                   details.breakdown.forEach(row => {
-                       htmlRows += `
-                        <tr>
-                            <td style="${tdStyle}">Tramo ${row.range} (${row.pct}%)</td>
-                            <td style="${tdRightStyle}">${row.fee.toLocaleString('es-ES', {minimumFractionDigits:2})} €</td>
-                        </tr>
-                       `;
-                   });
-                   // Suma Escala
-                   htmlRows += `
-                    <tr style="background-color: #f8fafc;">
-                        <td style="${tdStyle}">Suma Escala General</td>
-                        <td style="${tdRightStyle}">${details.scaleTotal.toLocaleString('es-ES', {minimumFractionDigits:2})} €</td>
-                    </tr>
-                   `;
-                }
-
-                // Ajuste intervención
-                htmlRows += `
-                    <tr>
-                        <td style="${tdStyle}">Ajuste Intervención (${customMod}%)</td>
-                        <td style="${tdRightStyle} color: #2563eb;">${details.preCapBase.toLocaleString('es-ES', {minimumFractionDigits:2})} €</td>
-                    </tr>
-                `;
-
-                // Mínimo
-                if (details.minApplied) {
-                    htmlRows += `
-                        <tr style="background-color: #fefce8;">
-                            <td style="${tdStyle} color: #a16207;">Corrección por Mínimo</td>
-                            <td style="${tdRightStyle} color: #a16207;">${details.effectiveMin.toLocaleString('es-ES')} €</td>
-                        </tr>
-                    `;
-                }
-
-                // Recorte
-                if (details.cappedByLimit) {
-                    htmlRows += `
-                        <tr style="background-color: #fff7ed;">
-                            <td style="${tdStyle} color: #c2410c;">Recorte 1/3 (Art 394.3 LEC)</td>
-                            <td style="${tdRightStyle} color: #c2410c;">${details.oneThirdLimit.toLocaleString('es-ES', {minimumFractionDigits:2})} €</td>
-                        </tr>
-                    `;
-                }
-
-                // Base Imponible
-                htmlRows += `
-                    <tr style="background-color: #f1f5f9;">
-                        <td style="${tdStyle} font-size: 11pt; border-top: 2px solid #94a3b8;">BASE IMPONIBLE</td>
-                        <td style="${tdRightStyle} font-size: 11pt; border-top: 2px solid #94a3b8;">${details.finalBase.toLocaleString('es-ES', {minimumFractionDigits:2})} €</td>
-                    </tr>
-                `;
-
-                // IVA
-                if (includeVAT) {
-                    htmlRows += `
-                        <tr>
-                            <td style="${tdStyle}">IVA (21%)</td>
-                            <td style="${tdRightStyle}">${details.vat.toLocaleString('es-ES', {minimumFractionDigits:2})} €</td>
-                        </tr>
-                    `;
-                }
-
-                // Total
-                htmlRows += `
-                    <tr style="background-color: #eff6ff;">
-                        <td style="${tdStyle} font-size: 12pt; color: #1e3a8a; border-top: 2px solid #2563eb;"><strong>TOTAL HONORARIOS LETRADO (IVA INCLUIDO)</strong></td>
-                        <td style="${tdRightStyle} font-size: 12pt; color: #1e3a8a; border-top: 2px solid #2563eb;"><strong>${details.grandTotal.toLocaleString('es-ES', {minimumFractionDigits:2})} €</strong></td>
-                    </tr>
-                `;
-
-                const fullHtml = `
-                    <h3 style="font-family: Arial, sans-serif; color: #1e3a8a;">Desglose Honorarios de Letrado</h3>
-                    <table style="${tableStyle}">
-                        <thead>
-                            <tr>
-                                <th style="${thStyle}">Concepto</th>
-                                <th style="${thRightStyle}">Importe</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${htmlRows}
-                        </tbody>
-                    </table>
-                `;
-
-                try {
-                    const blobHtml = new Blob([fullHtml], { type: "text/html" });
-                    const blobText = new Blob(["Tabla copiada. Pegue en Word para ver el formato."], { type: "text/plain" });
-                    const data = [new ClipboardItem({ 
-                        "text/html": blobHtml, 
-                        "text/plain": blobText 
-                    })];
-                    await navigator.clipboard.write(data);
-                    
-                    setCopySuccess(true);
-                    setTimeout(() => setCopySuccess(false), 2000);
-                } catch (err) {
-                    console.error("Error al copiar al portapapeles:", err);
-                    alert("No se pudo copiar automáticamente. Por favor, asegúrese de usar un navegador moderno (Chrome, Edge, Safari) y estar en un sitio seguro (HTTPS).");
-                }
+                text += `\n------------------\n`;
+                text += `SUMA HONORARIOS: ${totalFees.toFixed(2)}€\n`;
+                if (isCapped) text += `LÍMITE ART 394.3 APLICADO: ${limitValue.toFixed(2)}€\n`;
+                text += `BASE IMPONIBLE: ${finalBase.toFixed(2)}€\n`;
+                if (includeVAT) text += `IVA (21%): ${vatAmount.toFixed(2)}€\n`;
+                text += `TOTAL: ${grandTotal.toFixed(2)}€`;
+                navigator.clipboard.writeText(text);
+                alert("Desglose copiado al portapapeles");
             };
 
             if (!isAuthenticated) return <LoginScreen onLogin={() => setIsAuthenticated(true)} />;
 
             return (
                 <div className="flex justify-center p-4 min-h-screen pb-20 fade-in">
-                    <div className="w-full max-w-7xl grid grid-cols-1 lg:grid-cols-12 gap-6">
+                    <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-12 gap-6">
                         
-                        {/* LEFT COLUMN */}
-                        <div className="lg:col-span-3 space-y-4">
-                            <div className="bg-white rounded-xl shadow-lg border-2 border-blue-600 p-6 text-center transform hover:scale-[1.01] transition-transform">
-                                <h1 className="font-extrabold text-slate-900 text-lg uppercase leading-tight tracking-tight">
-                                    CALCULADORA HONORARIOS LETRADO<br/>
-                                    <span className="text-blue-700">(MADRID)</span> POR DBS
-                                </h1>
-                                <div className="h-1 w-16 bg-blue-600 mx-auto my-3 rounded-full"></div>
-                                <p className="text-xs text-slate-500 font-medium uppercase tracking-widest">Criterios 2013</p>
-                            </div>
-                            
-                            <nav className="space-y-2">
-                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-3">Selecciona Jurisdicción</p>
-                                {Object.values(MODES).map((m) => (
-                                    <button
-                                        key={m.id}
-                                        onClick={() => setJurisdiction(m.id)}
-                                        className={`w-full text-left px-4 py-3 rounded-lg text-sm transition-all flex items-center border ${jurisdiction === m.id ? 'mode-btn-active' : 'mode-btn-inactive'}`}
-                                    >
-                                        <i className={`fas ${m.icon} w-6 text-center mr-3 opacity-90`}></i>
-                                        {m.label}
-                                    </button>
-                                ))}
-                            </nav>
-
-                            {/* NOTA LEGAL ELIMINADA AQUI */}
-                        </div>
-
-                        {/* CENTER COLUMN */}
+                        {/* LEFT: FORMULARIO */}
                         <div className="lg:col-span-5 space-y-6">
-                            
-                            {/* PANEL 1: DATOS */}
-                            <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-                                <h2 className="text-sm font-bold text-slate-800 uppercase mb-4 border-b pb-2 flex items-center">
-                                    <span className="bg-slate-200 text-slate-600 rounded-full w-5 h-5 flex items-center justify-center text-xs mr-2">1</span>
-                                    Datos del Asunto
-                                </h2>
+                            <div className="bg-white p-6 rounded-xl shadow-lg border-t-4 border-blue-600">
+                                <h1 className="font-extrabold text-slate-800 text-lg uppercase mb-4">Calculadora Honorarios</h1>
                                 
-                                <div className="space-y-4">
-                                    <div>
-                                        <label className="block text-sm font-medium text-slate-600 mb-1">Procedimiento / Trámite</label>
-                                        <select 
-                                            value={selectedProcId || ''}
-                                            onChange={(e) => setSelectedProcId(e.target.value)}
-                                            className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
-                                        >
-                                            {PROCEDURES[jurisdiction].map((p, idx) => (
-                                                p.category ? 
-                                                <optgroup key={idx} label={p.category} className="font-bold text-slate-400 bg-white" /> :
-                                                <option key={p.id} value={p.id} className="text-slate-700 py-1">{p.label}</option>
-                                            ))}
-                                        </select>
-                                        <p className="text-xs text-slate-500 mt-1 italic pl-1">{currentProcedure.explanation}</p>
+                                {/* 0. CONFIGURACIÓN GLOBAL */}
+                                <div className="mb-6 bg-slate-50 p-3 rounded-lg border border-slate-200">
+                                    <label className="block text-xs font-bold text-slate-500 uppercase mb-2">1. Beneficiario de las Costas (IVA)</label>
+                                    <div className="flex gap-2">
+                                        <button onClick={() => setBeneficiaryType('PHYSICAL')} className={`flex-1 py-2 text-xs font-bold rounded ${beneficiaryType === 'PHYSICAL' ? 'bg-blue-100 text-blue-700 border border-blue-300' : 'bg-white border border-slate-300 text-slate-500'}`}>
+                                            <i className="fas fa-user mr-1"></i> Particular
+                                        </button>
+                                        <button onClick={() => setBeneficiaryType('LEGAL')} className={`flex-1 py-2 text-xs font-bold rounded ${beneficiaryType === 'LEGAL' ? 'bg-purple-100 text-purple-700 border border-purple-300' : 'bg-white border border-slate-300 text-slate-500'}`}>
+                                            <i className="fas fa-building mr-1"></i> Empresa
+                                        </button>
                                     </div>
-
-                                    <div>
-                                        <label className="block text-sm font-medium text-slate-600 mb-1 flex justify-between">
-                                            <span>
-                                                {jurisdiction === 'PENAL' ? 'Cuantía Resp. Civil (€)' : 
-                                                 jurisdiction === 'SOCIAL' && selectedProcId === 'c101_despido' ? 'Indemnización + Salarios (€)' :
-                                                 'Cuantía / Interés Económico (€)'}
-                                            </span>
-                                            
-                                            <div className="has-tooltip relative">
-                                                <span className="text-blue-500 cursor-help"><i className="fas fa-question-circle"></i> Ayuda</span>
-                                                <div className="tooltip whitespace-pre-wrap">{amountHelpText}</div>
-                                            </div>
-                                        </label>
-                                        
-                                        <div className="relative">
-                                            <input 
-                                                type="number"
-                                                value={amount}
-                                                onChange={(e) => setAmount(e.target.value)}
-                                                placeholder="0.00"
-                                                className="w-full p-3 pl-8 bg-white border border-slate-300 rounded-lg text-lg font-bold text-slate-800 focus:ring-2 focus:ring-blue-500 outline-none shadow-sm"
-                                            />
-                                            <span className="absolute left-3 top-4 text-slate-400">€</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* PANEL 2: MODERACIÓN */}
-                            <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-                                <div className="flex justify-between items-center mb-4 border-b pb-2">
-                                    <h2 className="text-sm font-bold text-slate-800 uppercase flex items-center">
-                                        <span className="bg-slate-200 text-slate-600 rounded-full w-5 h-5 flex items-center justify-center text-xs mr-2">2</span>
-                                        Grado de Intervención / Escala
-                                    </h2>
-                                    <span className={`text-xs font-bold px-2 py-1 rounded border ${selectedScenario.color ? selectedScenario.color.replace('text-', 'text-').replace('bg-', 'bg-') : 'bg-white text-gray-700'}`}>
-                                        {customMod}%
-                                    </span>
+                                    {beneficiaryType === 'LEGAL' && <p className="text-[10px] text-purple-600 mt-1"><i className="fas fa-info-circle"></i> IVA Excluido (Jurisprudencia TS/AP).</p>}
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-2 mb-4">
-                                    {SCENARIOS.map((sc) => (
-                                        <button
-                                            key={sc.id}
-                                            onClick={() => handleScenarioClick(sc)}
-                                            className={`scenario-btn p-2 rounded-lg border text-left text-xs relative ${selectedScenario?.id === sc.id ? `bg-blue-50 border-blue-500 ring-1 ring-blue-500` : 'bg-white border-slate-200 hover:border-blue-300'}`}
-                                        >
-                                            <div className="font-bold text-slate-700">{sc.label}</div>
-                                            <div className="text-slate-400 font-mono mt-1">{sc.pct}%</div>
-                                            {selectedScenario?.id === sc.id && <i className="fas fa-check-circle absolute top-2 right-2 text-blue-500"></i>}
+                                {/* 1. JURISDICCIÓN */}
+                                <div className="grid grid-cols-4 gap-1 mb-4">
+                                    {Object.values(MODES).map((m) => (
+                                        <button key={m.id} onClick={() => setJurisdiction(m.id)} className={`py-2 rounded flex flex-col items-center justify-center text-[10px] font-bold transition-all ${jurisdiction === m.id ? 'bg-slate-800 text-white' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}>
+                                            <i className={`fas ${m.icon} text-sm mb-1`}></i> {m.label.split(' ')[0]}
                                         </button>
                                     ))}
                                 </div>
 
-                                <div className={`p-3 rounded-lg border text-xs leading-relaxed fade-in mb-4 ${selectedScenario.color || 'bg-white text-gray-700'}`}>
-                                    <strong className="block mb-1"><i className="fas fa-info-circle mr-1"></i> Detalle Criterio:</strong>
-                                    {selectedScenario.desc}
-                                </div>
-
-                                <input type="range" min="0" max="100" step="1" value={customMod} onChange={handleSliderChange} className="w-full" />
-                            </div>
-
-                            {/* PANEL 3: CONFIGURACIÓN LEGAL */}
-                            <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 mt-6">
-                                <h2 className="text-sm font-bold text-slate-800 uppercase mb-4 border-b pb-2 flex items-center">
-                                    <span className="bg-slate-200 text-slate-600 rounded-full w-5 h-5 flex items-center justify-center text-xs mr-2">3</span>
-                                    Configuración Legal y Fiscal
-                                </h2>
-
+                                {/* 2. CONCEPTO */}
                                 <div className="space-y-4">
-                                    {/* Toggle Límite Costas */}
-                                    <div className="flex items-center justify-between">
+                                    <div>
+                                        <label className="block text-xs font-bold text-slate-600 mb-1">Trámite</label>
+                                        <select value={selectedProcId} onChange={(e) => setSelectedProcId(e.target.value)} className="w-full p-2 bg-white border border-slate-300 rounded text-sm">
+                                            {PROCEDURES[jurisdiction].map((p, idx) => (
+                                                p.category ? <optgroup key={idx} label={p.category} /> : <option key={p.id} value={p.id}>{p.label}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-4">
                                         <div>
-                                            <span className="text-sm font-bold text-slate-700 block">Límite de Costas (Art. 394.3 LEC)</span>
-                                            <span className="text-xs text-slate-500">Limitar a 1/3 de la cuantía (para Tasación de Costas)</span>
+                                            <label className="block text-xs font-bold text-slate-600 mb-1">Cuantía (€)</label>
+                                            <input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0.00" className="w-full p-2 border border-slate-300 rounded text-sm font-bold" />
                                         </div>
-                                        <div className="relative inline-block w-12 align-middle select-none transition duration-200 ease-in">
-                                            <input 
-                                                type="checkbox" 
-                                                name="toggleLimit" 
-                                                id="toggleLimit" 
-                                                checked={applyLimit}
-                                                onChange={() => setApplyLimit(!applyLimit)}
-                                                className="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer"
-                                            />
-                                            <label htmlFor="toggleLimit" className="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer"></label>
+                                        <div>
+                                            <label className="block text-xs font-bold text-slate-600 mb-1">% Escala</label>
+                                            <input type="number" value={customMod} onChange={(e) => setCustomMod(e.target.value)} className="w-full p-2 border border-slate-300 rounded text-sm text-center" />
                                         </div>
                                     </div>
 
-                                    {/* Separador */}
-                                    <hr className="border-slate-100" />
-
-                                    {/* Toggle IVA */}
-                                    <div className="flex items-center justify-between">
-                                        <div>
-                                            <span className="text-sm font-bold text-slate-700 block">Aplicar IVA (21%)</span>
-                                            <span className="text-xs text-slate-500">Añadir Impuesto sobre el Valor Añadido</span>
-                                        </div>
-                                        <div className="relative inline-block w-12 align-middle select-none transition duration-200 ease-in">
-                                            <input 
-                                                type="checkbox" 
-                                                name="toggleVAT" 
-                                                id="toggleVAT" 
-                                                checked={includeVAT}
-                                                onChange={() => setIncludeVAT(!includeVAT)}
-                                                className="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer"
-                                            />
-                                            <label htmlFor="toggleVAT" className="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer"></label>
-                                        </div>
-                                    </div>
+                                    <button onClick={addConcept} className="w-full bg-blue-600 text-white font-bold py-3 rounded-lg shadow-md hover:bg-blue-700 transition active:scale-95">
+                                        <i className="fas fa-plus-circle mr-2"></i> AÑADIR CONCEPTO
+                                    </button>
                                 </div>
                             </div>
                         </div>
 
-                        {/* RIGHT COLUMN: RESULTS */}
-                        <div className="lg:col-span-4 space-y-6">
-                            
-                            {/* TOTAL CARD */}
-                            {details && (
-                                <div className="bg-slate-800 text-white p-6 rounded-xl shadow-lg relative overflow-hidden fade-in">
-                                    <div className="relative z-10">
-                                        <h3 className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-1">Honorarios Totales Letrado</h3>
-                                        <div className="flex items-end gap-2 mb-1">
-                                            <span className="text-4xl font-extrabold tracking-tight">
-                                                {details.grandTotal.toLocaleString('es-ES', { style: 'currency', currency: 'EUR' })}
-                                            </span>
-                                        </div>
-                                        <p className="text-slate-400 text-xs mb-4">{includeVAT ? '(Incluye 21% IVA)' : '(Base Imponible)'}</p>
-                                        <div className="pt-4 border-t border-slate-600 space-y-1 text-sm">
-                                            <div className="flex justify-between text-slate-300">
-                                                <span>Honorarios Netos:</span>
-                                                <span className="font-mono text-white">{details.finalBase.toLocaleString('es-ES', {minimumFractionDigits: 2})}€</span>
-                                            </div>
-                                        </div>
+                        {/* RIGHT: RESULTADOS */}
+                        <div className="lg:col-span-7 space-y-6">
+                            {/* LISTA CONCEPTOS */}
+                            <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 min-h-[200px]">
+                                <h2 className="text-xs font-bold text-slate-400 uppercase mb-4 tracking-wider">Desglose del Expediente</h2>
+                                
+                                {concepts.length === 0 ? (
+                                    <div className="text-center py-10 text-slate-400 border-2 border-dashed border-slate-200 rounded-lg">
+                                        <i className="fas fa-calculator text-3xl mb-2 opacity-50"></i>
+                                        <p className="text-sm">Añade conceptos desde el panel izquierdo</p>
                                     </div>
-                                    <div className="absolute -bottom-6 -right-6 text-slate-700 opacity-20"><i className="fas fa-file-invoice text-9xl"></i></div>
-                                </div>
-                            )}
-
-                            {/* ALERTAS LÍMITE (MODIFICADO: AHORA ES OPCIONAL) */}
-                            {details && details.isOverLimit && (
-                                <div className={`border-l-4 p-4 rounded shadow-sm fade-in transition-colors ${details.cappedByLimit ? 'bg-orange-50 border-orange-500' : 'bg-yellow-50 border-yellow-400'}`}>
-                                    <div className="flex items-start">
-                                        <div className="flex-shrink-0 mt-0.5">
-                                            <i className={`fas fa-scale-balanced ${details.cappedByLimit ? 'text-orange-500' : 'text-yellow-500'}`}></i>
-                                        </div>
-                                        <div className="ml-3 w-full">
-                                            <p className={`text-sm font-bold ${details.cappedByLimit ? 'text-orange-800' : 'text-yellow-800'}`}>
-                                                Aviso Límite Art. 394.3 LEC
-                                            </p>
-                                            <p className={`text-xs mt-1 mb-2 ${details.cappedByLimit ? 'text-orange-700' : 'text-yellow-700'}`}>
-                                                Revisar si el importe supera la tercera parte de la cuantía ({details.oneThirdLimit.toLocaleString('es-ES', {maximumFractionDigits:0})}€).
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* SINGLE BREAKDOWN TABLE */}
-                            {details && (
-                                <div className="bg-white p-5 rounded-xl shadow-sm border border-slate-200 text-sm fade-in">
-                                    <div className="flex justify-between items-center border-b border-slate-200 mb-4 pb-2">
-                                        <div className="text-xs font-bold text-slate-700 uppercase">
-                                            <i className="fas fa-list-ol mr-2 text-blue-500"></i> Desglose Detallado
-                                        </div>
-                                        <div className="relative">
-                                            <button 
-                                                onClick={handleCopyToWord}
-                                                className="bg-blue-50 text-blue-600 hover:bg-blue-100 hover:text-blue-800 text-[10px] font-bold px-3 py-1.5 rounded flex items-center gap-1 transition-all"
-                                                title="Copiar tabla formateada para Word"
-                                            >
-                                                <i className="fas fa-file-word"></i> Copiar Tabla
-                                            </button>
-                                            {copySuccess && (
-                                                <div className="absolute top-full right-0 mt-1 bg-gray-800 text-white text-[10px] px-2 py-1 rounded shadow-lg animate-fade-in whitespace-nowrap z-50">
-                                                    ¡Copiado al portapapeles!
+                                ) : (
+                                    <div className="space-y-2">
+                                        {concepts.map((c) => (
+                                            <div key={c.id} className="flex justify-between items-center bg-slate-50 p-3 rounded border border-slate-100 animate-fade-in">
+                                                <div>
+                                                    <div className="font-bold text-slate-700 text-sm">{c.label}</div>
+                                                    <div className="text-xs text-slate-500">Base: {c.amount}€ | Escala: {c.mod}%</div>
                                                 </div>
-                                            )}
-                                        </div>
+                                                <div className="flex items-center gap-4">
+                                                    <span className="font-mono font-bold text-blue-600">{c.fee.toLocaleString('es-ES', {minimumFractionDigits: 2})} €</span>
+                                                    <button onClick={() => removeConcept(c.id)} className="text-red-400 hover:text-red-600"><i className="fas fa-trash"></i></button>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* TOTALES */}
+                            {concepts.length > 0 && (
+                                <div className="bg-slate-900 text-white p-6 rounded-xl shadow-lg animate-fade-in">
+                                    {/* ART 394.3 TOGGLE */}
+                                    <div className="flex justify-between items-center mb-4 pb-4 border-b border-slate-700">
+                                        <label className="flex items-center gap-2 cursor-pointer">
+                                            <div className={`w-10 h-6 rounded-full p-1 transition-colors ${applyLimit394 ? 'bg-orange-500' : 'bg-slate-600'}`}>
+                                                <div className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${applyLimit394 ? 'translate-x-4' : ''}`}></div>
+                                            </div>
+                                            <input type="checkbox" className="hidden" checked={applyLimit394} onChange={() => setApplyLimit394(!applyLimit394)} />
+                                            <span className="text-xs font-bold text-slate-300">Límite Costas (Art. 394.3)</span>
+                                        </label>
+                                        <button onClick={handleCopy} className="text-xs bg-slate-700 hover:bg-slate-600 px-3 py-1 rounded text-white"><i className="fas fa-copy mr-1"></i> Copiar</button>
                                     </div>
 
-                                    <div className="overflow-x-auto">
-                                        <table className="w-full text-sm text-left border-collapse">
-                                            <tbody className="divide-y divide-slate-100">
-                                                {/* HEADER IMPLÍCITO */}
-                                                <tr className="bg-slate-50">
-                                                    <td className="py-2 px-2 font-bold text-slate-600">Concepto</td>
-                                                    <td className="py-2 px-2 font-bold text-slate-600 text-right">Importe</td>
-                                                </tr>
-
-                                                {/* TRAMOS ESCALA */}
-                                                {!details.isFixed && details.breakdown.map((row, i) => (
-                                                    <tr key={i} className="hover:bg-slate-50">
-                                                        <td className="py-2 px-2 text-slate-500">
-                                                            Tramo {row.range} 
-                                                            <span className="text-blue-500 ml-1 font-semibold">({row.pct}%)</span>
-                                                        </td>
-                                                        <td className="py-2 px-2 text-right font-mono text-slate-600">
-                                                            {row.fee.toLocaleString('es-ES', {maximumFractionDigits:2})} €
-                                                        </td>
-                                                    </tr>
-                                                ))}
-
-                                                {/* SUMA ESCALA (si aplica) */}
-                                                {!details.isFixed && (
-                                                    <tr className="bg-slate-50 border-t border-slate-200">
-                                                        <td className="py-2 px-2 font-bold text-slate-600">Suma Escala General</td>
-                                                        <td className="py-2 px-2 text-right font-bold font-mono text-slate-700">{details.scaleTotal.toLocaleString('es-ES', {minimumFractionDigits:2})} €</td>
-                                                    </tr>
-                                                )}
-
-                                                {/* AJUSTE INTERVENCIÓN */}
-                                                <tr>
-                                                    <td className="py-2 px-2 text-slate-500">
-                                                        Ajuste Intervención 
-                                                        <span className="text-blue-600 font-bold ml-1">({customMod}%)</span>
-                                                        <div className="text-[9px] text-slate-400 italic">Porcentaje según trámite o manual</div>
-                                                    </td>
-                                                    <td className="py-2 px-2 text-right font-mono text-blue-600 font-bold">{details.preCapBase.toLocaleString('es-ES', {minimumFractionDigits:2})} €</td>
-                                                </tr>
-
-                                                {/* CORRECCIONES */}
-                                                {details.minApplied && (
-                                                    <tr className="bg-yellow-50">
-                                                        <td className="py-2 px-2 text-yellow-700 font-semibold">Corrección Mínimo</td>
-                                                        <td className="py-2 px-2 text-right font-mono text-yellow-700">{details.effectiveMin.toLocaleString('es-ES')} €</td>
-                                                    </tr>
-                                                )}
-                                                {details.cappedByLimit && (
-                                                    <tr className="bg-orange-50">
-                                                        <td className="py-2 px-2 text-orange-700 font-semibold">Recorte 1/3 (Art 394.3)</td>
-                                                        <td className="py-2 px-2 text-right font-mono text-orange-700">{details.oneThirdLimit.toLocaleString('es-ES', {minimumFractionDigits:2})} €</td>
-                                                    </tr>
-                                                )}
-
-                                                {/* TOTALES FINALES */}
-                                                <tr className="bg-slate-100 border-t-2 border-slate-200">
-                                                    <td className="py-3 px-2 font-bold text-slate-800 text-xs">BASE IMPONIBLE</td>
-                                                    <td className="py-3 px-2 text-right font-bold font-mono text-slate-900 text-sm">{details.finalBase.toLocaleString('es-ES', {minimumFractionDigits:2})} €</td>
-                                                </tr>
-                                                {includeVAT && (
-                                                    <tr>
-                                                        <td className="py-2 px-2 text-slate-500">IVA (21%)</td>
-                                                        <td className="py-2 px-2 text-right font-mono">{details.vat.toLocaleString('es-ES', {minimumFractionDigits:2})} €</td>
-                                                    </tr>
-                                                )}
-                                                <tr className="bg-blue-50 border-t border-blue-100">
-                                                    <td className="py-3 px-2 font-bold text-blue-800">TOTAL A PERCIBIR</td>
-                                                    <td className="py-3 px-2 text-right font-bold font-mono text-blue-800 text-base">{details.grandTotal.toLocaleString('es-ES', {minimumFractionDigits:2})} €</td>
-                                                </tr>
-                                            </tbody>
-                                        </table>
+                                    <div className="space-y-1 text-sm">
+                                        <div className="flex justify-between text-slate-400">
+                                            <span>Suma Honorarios:</span>
+                                            <span>{totalFees.toLocaleString('es-ES', {minimumFractionDigits: 2})} €</span>
+                                        </div>
+                                        {isCapped && (
+                                            <div className="flex justify-between text-orange-400 font-bold">
+                                                <span>Límite Legal (1/3):</span>
+                                                <span>{limitValue.toLocaleString('es-ES', {minimumFractionDigits: 2})} €</span>
+                                            </div>
+                                        )}
+                                        <div className="flex justify-between text-white font-bold text-lg pt-2 border-t border-slate-700">
+                                            <span>Base Imponible:</span>
+                                            <span>{finalBase.toLocaleString('es-ES', {minimumFractionDigits: 2})} €</span>
+                                        </div>
+                                        {includeVAT && (
+                                            <div className="flex justify-between text-slate-400">
+                                                <span>IVA (21%):</span>
+                                                <span>{vatAmount.toLocaleString('es-ES', {minimumFractionDigits: 2})} €</span>
+                                            </div>
+                                        )}
+                                        <div className="flex justify-between text-blue-300 font-extrabold text-2xl mt-2 pt-2 border-t-2 border-slate-700">
+                                            <span>TOTAL:</span>
+                                            <span>{grandTotal.toLocaleString('es-ES', {minimumFractionDigits: 2})} €</span>
+                                        </div>
                                     </div>
                                 </div>
                             )}
-
-                            {/* CHAT WIDGET FLOTANTE */}
+                            
                             <ChatFloating />
                         </div>
                     </div>
