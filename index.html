@@ -291,11 +291,33 @@
                 isCapped = true;
             }
 
-            // Lógica IVA Inteligente (Consultor Experto)
-            const includeVAT = useMemo(() => {
-                if (calculationMode === 'PRESUPUESTO') return true; // Al cliente siempre se le cobra IVA
-                // En Tasación de Costas, depende del beneficiario
-                return beneficiaryType === 'PHYSICAL'; 
+            // REGLA DE NEGOCIO ESTRICTA: Determinación del IVA (Cerebro Fiscal)
+            const { includeVAT, vatReason } = useMemo(() => {
+                // CASO 1: Presupuesto a Cliente Propio
+                if (calculationMode === 'PRESUPUESTO') {
+                    return { 
+                        includeVAT: true, 
+                        vatReason: "IVA Incluido (Obligatorio en facturación a cliente)" 
+                    };
+                }
+
+                // CASO 2: Tasación de Costas (Paga la contraria)
+                if (calculationMode === 'COSTAS') {
+                    if (beneficiaryType === 'LEGAL') {
+                        // REGLA CRÍTICA: La empresa se deduce el IVA, no se repercute en costas.
+                        return { 
+                            includeVAT: false, 
+                            vatReason: "IVA Excluido (Beneficiario es sociedad mercantil con derecho a deducción)" 
+                        };
+                    } else {
+                        // Particular: Es un coste real, se incluye.
+                        return { 
+                            includeVAT: true, 
+                            vatReason: "IVA Incluido (Beneficiario particular / consumidor final)" 
+                        };
+                    }
+                }
+                return { includeVAT: true, vatReason: "" };
             }, [calculationMode, beneficiaryType]);
 
             const vatAmount = includeVAT ? finalBase * 0.21 : 0;
@@ -329,47 +351,51 @@
                             <div className="bg-white p-6 rounded-xl shadow-lg border-t-4 border-blue-600">
                                 <h1 className="font-extrabold text-slate-800 text-lg uppercase mb-4">Calculadora Honorarios</h1>
                                 
-                                {/* 0. CONFIGURACIÓN GLOBAL */}
-                                <div className="mb-6 bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-4">
+                                {/* 0. CONFIGURACIÓN GLOBAL (PROTECCIÓN FISCAL) */}
+                                <div className="mb-6 bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3">
                                     <div>
-                                        <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Modo de Cálculo</label>
+                                        <label className="block text-[10px] font-bold text-slate-400 uppercase mb-2 tracking-wider">Modo de Cálculo</label>
                                         <div className="flex gap-2">
                                             <button 
                                                 onClick={() => setCalculationMode('PRESUPUESTO')} 
-                                                className={`flex-1 py-3 px-2 rounded-lg flex flex-col items-center gap-1 border transition-all ${calculationMode === 'PRESUPUESTO' ? 'bg-blue-600 text-white border-blue-700 shadow-md' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'}`}
+                                                className={`flex-1 py-2.5 px-2 rounded-lg flex items-center justify-center gap-2 border transition-all ${calculationMode === 'PRESUPUESTO' ? 'bg-slate-800 text-white border-slate-900 shadow-md' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'}`}
                                             >
-                                                <i className="fas fa-file-invoice-dollar text-lg"></i>
-                                                <span className="text-[10px] font-bold uppercase">Presupuesto Cliente</span>
+                                                <i className="fas fa-file-invoice-dollar"></i>
+                                                <span className="text-xs font-bold uppercase">Presupuesto</span>
                                             </button>
                                             <button 
                                                 onClick={() => setCalculationMode('COSTAS')} 
-                                                className={`flex-1 py-3 px-2 rounded-lg flex flex-col items-center gap-1 border transition-all ${calculationMode === 'COSTAS' ? 'bg-blue-600 text-white border-blue-700 shadow-md' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'}`}
+                                                className={`flex-1 py-2.5 px-2 rounded-lg flex items-center justify-center gap-2 border transition-all ${calculationMode === 'COSTAS' ? 'bg-slate-800 text-white border-slate-900 shadow-md' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'}`}
                                             >
-                                                <i className="fas fa-gavel text-lg"></i>
-                                                <span className="text-[10px] font-bold uppercase">Tasación de Costas</span>
+                                                <i className="fas fa-gavel"></i>
+                                                <span className="text-xs font-bold uppercase">Costas</span>
                                             </button>
                                         </div>
                                     </div>
 
                                     {calculationMode === 'PRESUPUESTO' ? (
-                                        <div className="bg-green-50 border border-green-200 p-2 rounded-lg flex items-center gap-2 fade-in">
+                                        <div className="bg-green-50 border border-green-200 p-3 rounded-lg flex items-center gap-2 fade-in">
                                             <i className="fas fa-check-circle text-green-500"></i>
-                                            <span className="text-[10px] font-bold text-green-700 uppercase">IVA Incluido (Obligatorio en facturación)</span>
+                                            <span className="text-[10px] font-bold text-green-700 uppercase">Aplicando IVA General (21%)</span>
                                         </div>
                                     ) : (
                                         <div className="fade-in">
-                                            <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Beneficiario de las Costas</label>
+                                            <label className="block text-[10px] font-bold text-slate-400 uppercase mb-2 tracking-wider">Beneficiario (Receptor del pago)</label>
                                             <div className="flex gap-2">
-                                                <button onClick={() => setBeneficiaryType('PHYSICAL')} className={`flex-1 py-2 text-xs font-bold rounded ${beneficiaryType === 'PHYSICAL' ? 'bg-blue-100 text-blue-700 border border-blue-300' : 'bg-white border border-slate-300 text-slate-500'}`}>
+                                                <button onClick={() => setBeneficiaryType('PHYSICAL')} className={`flex-1 py-2 text-[10px] font-bold rounded border transition-all ${beneficiaryType === 'PHYSICAL' ? 'bg-blue-50 text-blue-700 border-blue-300' : 'bg-white border-slate-200 text-slate-500'}`}>
                                                     <i className="fas fa-user mr-1"></i> Particular
                                                 </button>
-                                                <button onClick={() => setBeneficiaryType('LEGAL')} className={`flex-1 py-2 text-xs font-bold rounded ${beneficiaryType === 'LEGAL' ? 'bg-purple-100 text-purple-700 border border-purple-300' : 'bg-white border border-slate-300 text-slate-500'}`}>
+                                                <button onClick={() => setBeneficiaryType('LEGAL')} className={`flex-1 py-2 text-[10px] font-bold rounded border transition-all ${beneficiaryType === 'LEGAL' ? 'bg-purple-50 text-purple-700 border-purple-300' : 'bg-white border-slate-200 text-slate-500'}`}>
                                                     <i className="fas fa-building mr-1"></i> Empresa
                                                 </button>
                                             </div>
-                                            {beneficiaryType === 'LEGAL' && <p className="text-[10px] text-purple-600 mt-1"><i className="fas fa-info-circle"></i> IVA Excluido (Jurisprudencia TS/AP).</p>}
                                         </div>
                                     )}
+
+                                    <div className={`text-[9px] font-medium px-2 py-1 rounded border flex items-center gap-1.5 ${includeVAT ? 'bg-blue-50 text-blue-600 border-blue-100' : 'bg-purple-50 text-purple-600 border-purple-100'}`}>
+                                        <i className={`fas ${includeVAT ? 'fa-info-circle' : 'fa-shield-halved'}`}></i>
+                                        {vatReason}
+                                    </div>
                                 </div>
 
                                 {/* 1. JURISDICCIÓN */}
