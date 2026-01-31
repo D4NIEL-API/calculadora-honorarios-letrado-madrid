@@ -123,36 +123,26 @@
         // --- GEMINI API SETUP ---
         const BACKEND_URL = "https://backend-honorarios-letrado.onrender.com/api/chat";
 
-        // --- CONTEXTO JURÍDICO ---
-        const ICAM_CONTEXT = `
-        {
-          "TITULO": "CRITERIOS ORIENTADORES DE HONORARIOS ICAM (2013)",
-          "RESUMEN": "Calculadora basada en Criterios ICAM para tasación de costas."
-        }
-        `; 
-
         async function chatWithGemini(messages) {
             try {
+                // Solo enviamos el historial de conversación. La inteligencia reside en el servidor.
                 const contents = messages.map(msg => ({
                     role: msg.role === 'user' ? 'user' : 'model',
                     parts: [{ text: msg.content }]
                 }));
-                const lastMsgIndex = contents.length - 1;
-                const userQuery = contents[lastMsgIndex].parts[0].text;
-                
-                const prompt = `ACTÚA COMO EXPERTO LETRADO ICAM. CONSULTA: "${userQuery}"`;
-                contents[lastMsgIndex].parts[0].text = prompt;
 
                 const response = await fetch(BACKEND_URL, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ contents })
                 });
+
                 if (!response.ok) throw new Error("Error servidor");
                 const data = await response.json();
-                return data.candidates?.[0]?.content?.parts?.[0]?.text || "Error al procesar.";
+                return data.candidates?.[0]?.content?.parts?.[0]?.text || "Error al procesar la respuesta.";
             } catch (error) {
-                return "El servidor de IA se está iniciando. Intenta en unos segundos.";
+                console.error(error);
+                return "Error de conexión con el Asistente Jurídico.";
             }
         }
 
