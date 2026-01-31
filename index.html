@@ -323,21 +323,37 @@
             const vatAmount = includeVAT ? finalBase * 0.21 : 0;
             const grandTotal = finalBase + vatAmount;
 
-            // COPIAR
             const handleCopy = () => {
-                // Implementación simple para clipboard
-                let text = "DESGLOSE DE HONORARIOS\n\n";
+                // Función para limpiar "(Criterio XX)" del nombre del procedimiento
+                const cleanLabel = (text) => text.replace(/\s*\(Criterio\s*[\d.]+\)/gi, "").trim();
+
+                let text = "DESGLOSE PROFESIONAL DE HONORARIOS\n";
+                text += "==================================\n\n";
+                
                 concepts.forEach(c => {
-                    text += `${c.label} (${c.amount}€ al ${c.mod}%): ${c.fee.toFixed(2)}€\n`;
+                    const nombreLimpio = cleanLabel(c.label);
+                    text += `• ${nombreLimpio.toUpperCase()}\n`;
+                    text += `  Base: ${c.amount.toLocaleString('es-ES')} € | Aplicado: ${c.mod}%\n`;
+                    text += `  Subtotal: ${c.fee.toLocaleString('es-ES', {minimumFractionDigits: 2})} €\n\n`;
                 });
-                text += `\n------------------\n`;
-                text += `SUMA HONORARIOS: ${totalFees.toFixed(2)}€\n`;
-                if (isCapped) text += `LÍMITE ART 394.3 APLICADO: ${limitValue.toFixed(2)}€\n`;
-                text += `BASE IMPONIBLE: ${finalBase.toFixed(2)}€\n`;
-                if (includeVAT) text += `IVA (21%): ${vatAmount.toFixed(2)}€\n`;
-                text += `TOTAL: ${grandTotal.toFixed(2)}€`;
+
+                text += "----------------------------------\n";
+                text += `SUMA DE HONORARIOS: ${totalFees.toLocaleString('es-ES', {minimumFractionDigits: 2})} €\n`;
+                
+                if (isCapped) {
+                    text += `REDUCCIÓN ART. 394.3 LEC: -${(totalFees - limitValue).toLocaleString('es-ES', {minimumFractionDigits: 2})} €\n`;
+                    text += `BASE IMPONIBLE FINAL: ${finalBase.toLocaleString('es-ES', {minimumFractionDigits: 2})} €\n`;
+                }
+
+                if (includeVAT) {
+                    text += `IVA (21%): ${vatAmount.toLocaleString('es-ES', {minimumFractionDigits: 2})} €\n`;
+                }
+
+                text += `TOTAL EXPEDIENTE: ${grandTotal.toLocaleString('es-ES', {minimumFractionDigits: 2})} €\n`;
+                text += "----------------------------------";
+
                 navigator.clipboard.writeText(text);
-                alert("Desglose copiado al portapapeles");
+                alert("Cálculo profesional copiado (sin referencias a criterios)");
             };
 
             if (!isAuthenticated) return <LoginScreen onLogin={() => setIsAuthenticated(true)} />;
