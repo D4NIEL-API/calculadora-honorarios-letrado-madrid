@@ -18,8 +18,8 @@
         .fade-in { animation: fadeIn 0.4s ease-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         /* Chat Styles */
-        .chat-window { position: fixed; bottom: 90px; left: 24px; width: 350px; height: 500px; background-color: white; border-radius: 16px; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1); border: 1px solid #e2e8f0; z-index: 50; display: flex; flex-direction: column; overflow: hidden; }
-        .chat-fab { position: fixed; bottom: 24px; left: 24px; background-color: #2563eb; color: white; padding: 12px 20px; border-radius: 9999px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); cursor: pointer; z-index: 50; display: flex; align-items: center; gap: 8px; font-weight: 600; }
+        .chat-window { position: fixed; bottom: 90px; right: 24px; left: auto; width: 350px; height: 500px; background-color: white; border-radius: 16px; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1); border: 1px solid #e2e8f0; z-index: 50; display: flex; flex-direction: column; overflow: hidden; }
+        .chat-fab { position: fixed; bottom: 24px; right: 24px; left: auto; background-color: #2563eb; color: white; padding: 12px 20px; border-radius: 9999px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); cursor: pointer; z-index: 50; display: flex; align-items: center; gap: 8px; font-weight: 600; }
         .chat-bubble { max-width: 85%; padding: 10px 14px; border-radius: 12px; font-size: 0.85rem; line-height: 1.5; margin-bottom: 8px; }
         .chat-user { background-color: #1e3a8a; color: white; align-self: flex-end; }
         .chat-ai { background-color: #f1f5f9; color: #334155; align-self: flex-start; }
@@ -163,7 +163,7 @@
         function ChatFloating() {
             const [isOpen, setIsOpen] = useState(false);
             const [messages, setMessages] = useState([
-                { role: 'model', content: 'Hola, soy tu Auditor de Honorarios. ¿En qué te puedo ayudar? (Ej: "Tengo un desahucio con oposición de 600€ de renta")' }
+                { role: 'model', content: 'Hola, soy tu Asistente de Honorarios. ¿En qué te puedo ayudar? (Ej: "Tengo un desahucio con oposición de 600€ de renta")' }
             ]);
             const [inputValue, setInputValue] = useState('');
             const [isLoading, setIsLoading] = useState(false);
@@ -192,8 +192,8 @@
                     {isOpen && (
                         <div className="chat-window">
                             <div className="bg-slate-800 text-white p-3 border-b border-slate-700 flex justify-between items-center">
-                                <h3 className="font-bold text-sm flex items-center"><i className="fas fa-robot mr-2 text-blue-400"></i> Auditor IA</h3>
-                                <button onClick={() => setIsOpen(false)} className="hover:text-blue-300 transition"><i className="fas fa-times"></i></button>
+                                <h3 className="font-bold text-sm flex items-center"><i className="fas fa-robot mr-2 text-blue-400"></i> Asistente IA</h3>
+                                <button onClick={() => setIsOpen(false)} className="hover:text-blue-300 transition"><i className="fas fa-minus"></i></button>
                             </div>
                             <div className="flex-1 overflow-y-auto p-4 bg-slate-50 space-y-3">
                                 {messages.map((msg, idx) => (
@@ -236,6 +236,7 @@
             
             // ESTADO MULTI-CONCEPTO
             const [concepts, setConcepts] = useState([]); // Lista de conceptos agregados
+            const [calculationMode, setCalculationMode] = useState('COSTAS'); // 'PRESUPUESTO' | 'COSTAS'
             const [beneficiaryType, setBeneficiaryType] = useState('PHYSICAL'); // 'PHYSICAL' | 'LEGAL'
             const [applyLimit394, setApplyLimit394] = useState(false);
             
@@ -290,8 +291,13 @@
                 isCapped = true;
             }
 
-            // Lógica IVA
-            const includeVAT = beneficiaryType === 'PHYSICAL';
+            // Lógica IVA Inteligente (Consultor Experto)
+            const includeVAT = useMemo(() => {
+                if (calculationMode === 'PRESUPUESTO') return true; // Al cliente siempre se le cobra IVA
+                // En Tasación de Costas, depende del beneficiario
+                return beneficiaryType === 'PHYSICAL'; 
+            }, [calculationMode, beneficiaryType]);
+
             const vatAmount = includeVAT ? finalBase * 0.21 : 0;
             const grandTotal = finalBase + vatAmount;
 
@@ -324,17 +330,46 @@
                                 <h1 className="font-extrabold text-slate-800 text-lg uppercase mb-4">Calculadora Honorarios</h1>
                                 
                                 {/* 0. CONFIGURACIÓN GLOBAL */}
-                                <div className="mb-6 bg-slate-50 p-3 rounded-lg border border-slate-200">
-                                    <label className="block text-xs font-bold text-slate-500 uppercase mb-2">1. Beneficiario de las Costas (IVA)</label>
-                                    <div className="flex gap-2">
-                                        <button onClick={() => setBeneficiaryType('PHYSICAL')} className={`flex-1 py-2 text-xs font-bold rounded ${beneficiaryType === 'PHYSICAL' ? 'bg-blue-100 text-blue-700 border border-blue-300' : 'bg-white border border-slate-300 text-slate-500'}`}>
-                                            <i className="fas fa-user mr-1"></i> Particular
-                                        </button>
-                                        <button onClick={() => setBeneficiaryType('LEGAL')} className={`flex-1 py-2 text-xs font-bold rounded ${beneficiaryType === 'LEGAL' ? 'bg-purple-100 text-purple-700 border border-purple-300' : 'bg-white border border-slate-300 text-slate-500'}`}>
-                                            <i className="fas fa-building mr-1"></i> Empresa
-                                        </button>
+                                <div className="mb-6 bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-4">
+                                    <div>
+                                        <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Modo de Cálculo</label>
+                                        <div className="flex gap-2">
+                                            <button 
+                                                onClick={() => setCalculationMode('PRESUPUESTO')} 
+                                                className={`flex-1 py-3 px-2 rounded-lg flex flex-col items-center gap-1 border transition-all ${calculationMode === 'PRESUPUESTO' ? 'bg-blue-600 text-white border-blue-700 shadow-md' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'}`}
+                                            >
+                                                <i className="fas fa-file-invoice-dollar text-lg"></i>
+                                                <span className="text-[10px] font-bold uppercase">Presupuesto Cliente</span>
+                                            </button>
+                                            <button 
+                                                onClick={() => setCalculationMode('COSTAS')} 
+                                                className={`flex-1 py-3 px-2 rounded-lg flex flex-col items-center gap-1 border transition-all ${calculationMode === 'COSTAS' ? 'bg-blue-600 text-white border-blue-700 shadow-md' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'}`}
+                                            >
+                                                <i className="fas fa-gavel text-lg"></i>
+                                                <span className="text-[10px] font-bold uppercase">Tasación de Costas</span>
+                                            </button>
+                                        </div>
                                     </div>
-                                    {beneficiaryType === 'LEGAL' && <p className="text-[10px] text-purple-600 mt-1"><i className="fas fa-info-circle"></i> IVA Excluido (Jurisprudencia TS/AP).</p>}
+
+                                    {calculationMode === 'PRESUPUESTO' ? (
+                                        <div className="bg-green-50 border border-green-200 p-2 rounded-lg flex items-center gap-2 fade-in">
+                                            <i className="fas fa-check-circle text-green-500"></i>
+                                            <span className="text-[10px] font-bold text-green-700 uppercase">IVA Incluido (Obligatorio en facturación)</span>
+                                        </div>
+                                    ) : (
+                                        <div className="fade-in">
+                                            <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Beneficiario de las Costas</label>
+                                            <div className="flex gap-2">
+                                                <button onClick={() => setBeneficiaryType('PHYSICAL')} className={`flex-1 py-2 text-xs font-bold rounded ${beneficiaryType === 'PHYSICAL' ? 'bg-blue-100 text-blue-700 border border-blue-300' : 'bg-white border border-slate-300 text-slate-500'}`}>
+                                                    <i className="fas fa-user mr-1"></i> Particular
+                                                </button>
+                                                <button onClick={() => setBeneficiaryType('LEGAL')} className={`flex-1 py-2 text-xs font-bold rounded ${beneficiaryType === 'LEGAL' ? 'bg-purple-100 text-purple-700 border border-purple-300' : 'bg-white border border-slate-300 text-slate-500'}`}>
+                                                    <i className="fas fa-building mr-1"></i> Empresa
+                                                </button>
+                                            </div>
+                                            {beneficiaryType === 'LEGAL' && <p className="text-[10px] text-purple-600 mt-1"><i className="fas fa-info-circle"></i> IVA Excluido (Jurisprudencia TS/AP).</p>}
+                                        </div>
+                                    )}
                                 </div>
 
                                 {/* 1. JURISDICCIÓN */}
