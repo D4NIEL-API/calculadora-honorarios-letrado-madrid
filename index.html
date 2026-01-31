@@ -239,6 +239,7 @@
             const [calculationMode, setCalculationMode] = useState('COSTAS'); // 'PRESUPUESTO' | 'COSTAS'
             const [beneficiaryType, setBeneficiaryType] = useState('PHYSICAL'); // 'PHYSICAL' | 'LEGAL'
             const [applyLimit394, setApplyLimit394] = useState(false);
+            const [manualIVA, setManualIVA] = useState(true);
             
             // ESTADO FORMULARIO (INPUTS)
             const [jurisdiction, setJurisdiction] = useState('CIVIL');
@@ -256,6 +257,15 @@
                 const proc = PROCEDURES[jurisdiction].find(p => p.id === selectedProcId);
                 if (proc) setCustomMod(proc.mod);
             }, [selectedProcId]);
+
+            // Sincronización Inteligente de IVA
+            useEffect(() => {
+                if (calculationMode === 'PRESUPUESTO') {
+                    setManualIVA(true);
+                } else {
+                    setManualIVA(beneficiaryType === 'PHYSICAL');
+                }
+            }, [calculationMode, beneficiaryType]);
 
             // ACCIONES
             const addConcept = () => {
@@ -291,36 +301,25 @@
                 isCapped = true;
             }
 
-            // REGLA DE NEGOCIO ESTRICTA: Determinación del IVA (Cerebro Fiscal)
-            const { includeVAT, vatReason } = useMemo(() => {
+            // Feedback Visual del IVA (Cerebro Fiscal)
+            const vatReason = useMemo(() => {
                 // CASO 1: Presupuesto a Cliente Propio
                 if (calculationMode === 'PRESUPUESTO') {
-                    return { 
-                        includeVAT: true, 
-                        vatReason: "IVA Incluido (Obligatorio en facturación a cliente)" 
-                    };
+                    return "IVA Incluido (Obligatorio en facturación a cliente)";
                 }
 
                 // CASO 2: Tasación de Costas (Paga la contraria)
                 if (calculationMode === 'COSTAS') {
                     if (beneficiaryType === 'LEGAL') {
-                        // REGLA CRÍTICA: La empresa se deduce el IVA, no se repercute en costas.
-                        return { 
-                            includeVAT: false, 
-                            vatReason: "IVA Excluido (Beneficiario es sociedad mercantil con derecho a deducción)" 
-                        };
+                        return "IVA Excluido (Beneficiario es sociedad mercantil con derecho a deducción)";
                     } else {
-                        // Particular: Es un coste real, se incluye.
-                        return { 
-                            includeVAT: true, 
-                            vatReason: "IVA Incluido (Beneficiario particular / consumidor final)" 
-                        };
+                        return "IVA Incluido (Beneficiario particular / consumidor final)";
                     }
                 }
-                return { includeVAT: true, vatReason: "" };
+                return "";
             }, [calculationMode, beneficiaryType]);
 
-            const vatAmount = includeVAT ? finalBase * 0.21 : 0;
+            const vatAmount = manualIVA ? finalBase * 0.21 : 0;
             const grandTotal = finalBase + vatAmount;
 
             const handleCopy = () => {
@@ -345,7 +344,7 @@
                     text += `BASE IMPONIBLE FINAL: ${finalBase.toLocaleString('es-ES', {minimumFractionDigits: 2})} €\n`;
                 }
 
-                if (includeVAT) {
+                if (manualIVA) {
                     text += `IVA (21%): ${vatAmount.toLocaleString('es-ES', {minimumFractionDigits: 2})} €\n`;
                 }
 
@@ -365,7 +364,7 @@
                         {/* LEFT: FORMULARIO */}
                         <div className="lg:col-span-5 space-y-6">
                             <div className="bg-white p-6 rounded-xl shadow-lg border-t-4 border-blue-600">
-                                <h1 className="font-extrabold text-slate-800 text-lg uppercase mb-4">Calculadora Honorarios</h1>
+                                <h1 className="font-extrabold text-slate-800 text-lg uppercase mb-4">Calculadora Honorarios DBS</h1>
                                 
                                 {/* 0. CONFIGURACIÓN GLOBAL (PROTECCIÓN FISCAL) */}
                                 <div className="mb-6 bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3">
@@ -408,8 +407,8 @@
                                         </div>
                                     )}
 
-                                    <div className={`text-[9px] font-medium px-2 py-1 rounded border flex items-center gap-1.5 ${includeVAT ? 'bg-blue-50 text-blue-600 border-blue-100' : 'bg-purple-50 text-purple-600 border-purple-100'}`}>
-                                        <i className={`fas ${includeVAT ? 'fa-info-circle' : 'fa-shield-halved'}`}></i>
+                                    <div className={`text-[9px] font-medium px-2 py-1 rounded border flex items-center gap-1.5 ${manualIVA ? 'bg-blue-50 text-blue-600 border-blue-100' : 'bg-purple-50 text-purple-600 border-purple-100'}`}>
+                                        <i className={`fas ${manualIVA ? 'fa-info-circle' : 'fa-shield-halved'}`}></i>
                                         {vatReason}
                                     </div>
                                 </div>
@@ -442,6 +441,34 @@
                                             <label className="block text-xs font-bold text-slate-600 mb-1">% Escala</label>
                                             <input type="number" value={customMod} onChange={(e) => setCustomMod(e.target.value)} className="w-full p-2 border border-slate-300 rounded text-sm text-center" />
                                         </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* 3. REGLAS ESPECIALES */}
+                            <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                                <h2 className="text-sm font-bold text-slate-800 uppercase mb-4 border-b pb-2 flex items-center">
+                                    <span className="bg-slate-200 text-slate-600 rounded-full w-5 h-5 flex items-center justify-center text-xs mr-2">3</span>
+                                    Reglas Especiales
+                                </h2>
+                                <div className="space-y-4">
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-xs font-bold text-slate-600">Límite legal (Art. 394.3 LEC)</span>
+                                        <label className="relative inline-flex items-center cursor-pointer">
+                                            <input type="checkbox" className="sr-only" checked={applyLimit394} onChange={() => setApplyLimit394(!applyLimit394)} />
+                                            <div className={`w-10 h-6 rounded-full p-1 transition-colors ${applyLimit394 ? 'bg-orange-500' : 'bg-slate-300'}`}>
+                                                <div className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${applyLimit394 ? 'translate-x-4' : ''}`}></div>
+                                            </div>
+                                        </label>
+                                    </div>
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-xs font-bold text-slate-600">Aplicar IVA (21%)</span>
+                                        <label className="relative inline-flex items-center cursor-pointer">
+                                            <input type="checkbox" className="sr-only" checked={manualIVA} onChange={() => setManualIVA(!manualIVA)} />
+                                            <div className={`w-10 h-6 rounded-full p-1 transition-colors ${manualIVA ? 'bg-blue-600' : 'bg-slate-300'}`}>
+                                                <div className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${manualIVA ? 'translate-x-4' : ''}`}></div>
+                                            </div>
+                                        </label>
                                     </div>
 
                                     <button onClick={addConcept} className="w-full bg-blue-600 text-white font-bold py-3 rounded-lg shadow-md hover:bg-blue-700 transition active:scale-95">
@@ -483,15 +510,7 @@
                             {/* TOTALES */}
                             {concepts.length > 0 && (
                                 <div className="bg-slate-900 text-white p-6 rounded-xl shadow-lg animate-fade-in">
-                                    {/* ART 394.3 TOGGLE */}
-                                    <div className="flex justify-between items-center mb-4 pb-4 border-b border-slate-700">
-                                        <label className="flex items-center gap-2 cursor-pointer">
-                                            <div className={`w-10 h-6 rounded-full p-1 transition-colors ${applyLimit394 ? 'bg-orange-500' : 'bg-slate-600'}`}>
-                                                <div className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${applyLimit394 ? 'translate-x-4' : ''}`}></div>
-                                            </div>
-                                            <input type="checkbox" className="hidden" checked={applyLimit394} onChange={() => setApplyLimit394(!applyLimit394)} />
-                                            <span className="text-xs font-bold text-slate-300">Límite Costas (Art. 394.3)</span>
-                                        </label>
+                                    <div className="flex justify-end items-center mb-4 pb-4 border-b border-slate-700">
                                         <button onClick={handleCopy} className="text-xs bg-slate-700 hover:bg-slate-600 px-3 py-1 rounded text-white"><i className="fas fa-copy mr-1"></i> Copiar</button>
                                     </div>
 
@@ -510,7 +529,7 @@
                                             <span>Base Imponible:</span>
                                             <span>{finalBase.toLocaleString('es-ES', {minimumFractionDigits: 2})} €</span>
                                         </div>
-                                        {includeVAT && (
+                                        {manualIVA && (
                                             <div className="flex justify-between text-slate-400">
                                                 <span>IVA (21%):</span>
                                                 <span>{vatAmount.toLocaleString('es-ES', {minimumFractionDigits: 2})} €</span>
