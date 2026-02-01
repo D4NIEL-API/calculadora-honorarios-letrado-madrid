@@ -3,6 +3,7 @@ const cors = require('cors');
 const app = express();
 // Importación compatible para node-fetch v3 en CommonJS
 const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
+const config = require('./config.js');
 
 // Configuración CORS
 const allowedOrigins = [
@@ -73,7 +74,7 @@ IMPORTANTE: EL USUARIO VE "ETIQUETAS", NO "IDs". AL RECOMENDAR, DALE EL NOMBRE D
 
 REGLAS ESPECIALES (TOGGLES):
 A) TOGGLE "Aplicar límite legal (Art 394.3 LEC)": 
-   - SI ES "JURA DE CUENTAS" O "PRESUPUESTO":
+   - SI ES "JURA DE CUENTAS":
      >>> INSTRUCCIÓN: Dile IMPERATIVAMENTE que lo DESACTIVE. (Razón: En la relación abogado-cliente rige la libertad de precios y no aplica el límite de costas procesales).
    
    - SI ES "TASACIÓN DE COSTAS" (Paga el contrario):
@@ -82,7 +83,7 @@ A) TOGGLE "Aplicar límite legal (Art 394.3 LEC)":
      >>> EXCEPCIÓN CRÍTICA 2 (CONTENCIOSO-ADMINISTRATIVO): Advierte que si la sentencia fija una cifra tope (ej. "máximo 2.000€"), ese es el límite real (Art. 139 LJCA), independientemente de la escala.
 
 B) TOGGLE "IVA":
-   - SI ES "JURA DE CUENTAS" O "PRESUPUESTO":
+   - SI ES "JURA DE CUENTAS":
      >>> INSTRUCCIÓN: Dile que lo ACTIVE SIEMPRE. (El abogado siempre factura IVA a su propio cliente por sus servicios).
 
    - SI ES "TASACIÓN DE COSTAS" (Paga el contrario):
@@ -141,7 +142,7 @@ app.post('/api/chat', async (req, res) => {
         `;
 
         const response = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${API_KEY}`,
+            `https://generativelanguage.googleapis.com/v1beta/models/${config.GEMINI_MODEL}:generateContent?key=${API_KEY}`,
             {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },

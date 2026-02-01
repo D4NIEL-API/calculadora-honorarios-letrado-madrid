@@ -10,6 +10,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&display=swap" rel="stylesheet">
+    <script src="config.js"></script>
     <style>
         body { font-family: 'Segoe UI', system-ui, sans-serif; background-color: #f1f5f9; }
         .mode-btn-active { background-color: #1e3a8a; color: #ffffff; border: 1px solid #1e3a8a; box-shadow: 0 4px 6px -1px rgba(30, 58, 138, 0.4); font-weight: 700; }
@@ -82,8 +84,8 @@
         const PROCEDURES = {
             CIVIL: [
                { category: 'Declarativos' },
-                { id: 'c4_ordinario', label: 'Juicio Ordinario (Criterio 4)', min: 2100, mod: 100 },
-                { id: 'c5_verbal', label: 'Juicio Verbal (Criterio 5)', min: 1200, mod: 100 },
+                { id: 'c4_ordinario', label: 'Juicio Ordinario', min: 2100, mod: 100 },
+                { id: 'c5_verbal', label: 'Juicio Verbal', min: 1200, mod: 100 },
                 { id: 'c5_desahucio_no_op', label: 'Desahucio (Sin Oposición)', min: 600, mod: 50 },
                 { id: 'c5_desahucio_op', label: 'Desahucio (Con Vista)', min: 900, mod: 100 },
                 { id: 'c23_monitorio', label: 'Monitorio (Sin Oposición)', min: 400, mod: 25 },
@@ -162,7 +164,7 @@
         // --- CHAT SIDEBAR (COPILOTO) ---
         function ChatSidebar() {
             const [messages, setMessages] = useState([
-                { role: 'model', content: 'Hola, soy tu Asistente de Honorarios. ¿En qué te puedo ayudar? (Ej: "Tengo un desahucio con oposición de 600€ de renta")' }
+                { role: 'model', content: 'Hola, soy tu Asistente de Honorarios (basado en criterios orientadores ICAM 2013). ¿En qué te puedo ayudar?' }
             ]);
             const [inputValue, setInputValue] = useState('');
             const [isLoading, setIsLoading] = useState(false);
@@ -213,12 +215,12 @@
                                 }}
                                 placeholder="Describe tu caso aquí con todo detalle..." 
                                 rows="3"
-                                className="w-full pl-4 pr-14 py-3 bg-white border-2 border-slate-400 rounded-xl text-slate-800 placeholder-slate-500 focus:outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-100 transition-all shadow-lg resize-none text-sm leading-relaxed" 
+                                className="w-full pl-4 pr-14 py-3 bg-slate-50 border-2 border-slate-600 rounded-xl text-slate-900 placeholder-slate-600 focus:outline-none focus:border-blue-700 focus:ring-4 focus:ring-blue-200 transition-all shadow-xl resize-none text-sm leading-relaxed font-medium" 
                             />
                             <button 
                                 type="submit" 
                                 disabled={!inputValue.trim() || isLoading} 
-                                className="absolute right-3 bottom-3 p-2 w-10 h-10 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-md transition-all flex items-center justify-center"
+                                className="absolute right-3 bottom-3 p-2 w-10 h-10 bg-blue-700 text-white rounded-lg hover:bg-blue-800 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg transition-all flex items-center justify-center"
                             >
                                 <i className="fas fa-paper-plane text-lg"></i>
                             </button>
@@ -234,7 +236,7 @@
             const [error, setError] = useState(false);
             const handleSubmit = (e) => { 
                 e.preventDefault(); 
-                if (password === "DBS26") {
+                if (password === APP_CONFIG.ACCESS_PASSWORD) {
                     onLogin(); 
                 } else {
                     setError(true);
@@ -258,7 +260,7 @@
             
             // ESTADO MULTI-CONCEPTO
             const [concepts, setConcepts] = useState([]); // Lista de conceptos agregados
-            const [calculationMode, setCalculationMode] = useState('COSTAS'); // 'PRESUPUESTO' | 'COSTAS'
+            const [calculationMode, setCalculationMode] = useState('COSTAS'); // 'JURA DE CUENTAS' | 'COSTAS'
             const [applyLimit394, setApplyLimit394] = useState(false);
             const [manualIVA, setManualIVA] = useState(true);
             
@@ -361,7 +363,7 @@
                             <div className="grid grid-cols-1 2xl:grid-cols-2 gap-6 items-start">
                                 {/* 1. CALCULADORA */}
                                 <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-                                <h1 className="font-extrabold text-slate-800 text-lg uppercase mb-4">Gestor de Honorarios & Costas DBS</h1>
+                                <h1 className="text-3xl text-slate-800 text-center mb-6" style={{ fontFamily: "'Playfair Display', serif", fontWeight: 700 }}>MINUTACIÓN DE HONORARIOS Y COSTAS DBS</h1>
                                 
                                 {/* 0. CONFIGURACIÓN GLOBAL (PROTECCIÓN FISCAL) */}
                                 <div className="mb-6 bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3">
@@ -369,18 +371,18 @@
                                         <label className="block text-[10px] font-bold text-slate-400 uppercase mb-2 tracking-wider">Modo de Cálculo</label>
                                         <div className="flex gap-2">
                                             <button 
-                                                onClick={() => setCalculationMode('PRESUPUESTO')} 
-                                                className={`flex-1 py-2.5 px-2 rounded-lg flex items-center justify-center gap-2 border transition-all ${calculationMode === 'PRESUPUESTO' ? 'bg-slate-800 text-white border-slate-900 shadow-md' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'}`}
+                                                onClick={() => setCalculationMode('JURA DE CUENTAS')} 
+                                                className={`flex-1 py-2.5 px-2 rounded-lg flex items-center justify-center gap-2 border transition-all ${calculationMode === 'JURA DE CUENTAS' ? 'bg-slate-800 text-white border-slate-900 shadow-md' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'}`}
                                             >
                                                 <i className="fas fa-file-invoice-dollar"></i>
-                                                <span className="text-xs font-bold uppercase">Presupuesto</span>
+                                                <span className="text-xs font-bold uppercase">Jura de cuentas</span>
                                             </button>
                                             <button 
-                                                onClick={() => setCalculationMode('COSTAS')} 
-                                                className={`flex-1 py-2.5 px-2 rounded-lg flex items-center justify-center gap-2 border transition-all ${calculationMode === 'COSTAS' ? 'bg-slate-800 text-white border-slate-900 shadow-md' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'}`}
+                                                onClick={() => setCalculationMode('TASACIÓN COSTAS')} 
+                                                className={`flex-1 py-2.5 px-2 rounded-lg flex items-center justify-center gap-2 border transition-all ${calculationMode === 'TASACIÓN COSTAS' ? 'bg-slate-800 text-white border-slate-900 shadow-md' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'}`}
                                             >
                                                 <i className="fas fa-gavel"></i>
-                                                <span className="text-xs font-bold uppercase">Costas</span>
+                                                <span className="text-xs font-bold uppercase">Tasación costas</span>
                                             </button>
                                         </div>
                                     </div>
@@ -424,34 +426,36 @@
                                     Ajustes Legales
                                 </h2>
                                 <div className="space-y-4">
-                                    <div className="flex items-center justify-between">
-                                        <span className="text-xs font-bold text-slate-600">Límite legal (Art. 394.3 LEC)</span>
+                                    <div className="flex items-center">
+                                        <span className="text-xs font-bold text-slate-600 w-56">Límite legal (Art. 394.3 LEC)</span>
                                         <label className="relative inline-flex items-center cursor-pointer">
                                             <input type="checkbox" className="sr-only" checked={applyLimit394} onChange={() => setApplyLimit394(!applyLimit394)} />
-                                            <div className={`w-10 h-6 rounded-full p-1 transition-colors ${applyLimit394 ? 'bg-blue-600' : 'bg-slate-300'}`}>
-                                                <div className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${applyLimit394 ? 'translate-x-4' : ''}`}></div>
+                                            <div className={`w-11 h-6 rounded-full p-1 transition-colors ${applyLimit394 ? 'bg-blue-600' : 'bg-slate-300'}`}>
+                                                <div className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${applyLimit394 ? 'translate-x-5' : ''}`}></div>
                                             </div>
                                         </label>
                                     </div>
                                     
                                     {/* TOGGLE IVA CON LÓGICA JURÍDICA INTEGRADA */}
                                     <div className="mb-4">
-                                        <div className="flex justify-between items-center mb-1">
-                                            <span className="text-sm font-bold text-slate-700">IVA (21%)</span>
-                                            <label className="relative inline-flex items-center cursor-pointer">
-                                                <input type="checkbox" checked={manualIVA} onChange={() => setManualIVA(!manualIVA)} className="sr-only peer" />
-                                                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                        <div className="flex items-center">
+                                            <span className="text-sm font-bold text-slate-700 w-56 flex-shrink-0">IVA (21%)</span>
+                                            <label className="relative inline-flex items-center cursor-pointer mr-3 flex-shrink-0">
+                                                <input type="checkbox" className="sr-only" checked={manualIVA} onChange={() => setManualIVA(!manualIVA)} />
+                                                <div className={`w-11 h-6 rounded-full p-1 transition-colors ${manualIVA ? 'bg-blue-600' : 'bg-slate-300'}`}>
+                                                    <div className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${manualIVA ? 'translate-x-5' : ''}`}></div>
+                                                </div>
                                             </label>
-                                        </div>
-                                        {manualIVA ? (
-                                            <p className="text-xs text-green-600 font-medium animate-fade-in">
+                                            {manualIVA ? (
+                                            <span className="text-sm text-green-600 font-medium animate-fade-in">
                                                 <i className="fas fa-check-circle mr-1"></i> (Beneficiario particular / consumidor final)
-                                            </p>
+                                            </span>
                                         ) : (
-                                            <p className="text-[10px] text-slate-500 italic leading-tight animate-fade-in bg-slate-50 p-2 rounded border border-slate-100">
+                                            <span className="text-xs text-slate-700 font-medium leading-tight animate-fade-in">
                                                 <i className="fas fa-info-circle mr-1"></i> (Beneficiario empresa) Según doctrina del TS, el IVA no es gasto necesario si el vencedor puede deducirlo íntegramente.
-                                            </p>
+                                            </span>
                                         )}
+                                        </div>
                                     </div>
 
                                     <button onClick={addConcept} className="w-full bg-blue-600 text-white font-bold py-3 rounded-lg shadow-md hover:bg-blue-700 transition active:scale-95">
