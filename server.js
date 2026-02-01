@@ -72,15 +72,24 @@ IMPORTANTE: EL USUARIO VE "ETIQUETAS", NO "IDs". AL RECOMENDAR, DALE EL NOMBRE D
    - ABREVIADO: Etiqueta "Procedimiento Abreviado" (ID: c90_abreviado). Slider 100%.
 
 REGLAS ESPECIALES (TOGGLES):
-A) TOGGLE "Aplicar reducción legal (Art 394.3 LEC)": 
-   - PREGUNTA SIEMPRE: "¿Es una Tasación de Costas (paga el contrario) o Jura de Cuentas (paga el cliente)?"
-   - SI ES TASACIÓN DE COSTAS: Dile que active la opción "Límite Costas". (Límite 1/3 de la cuantía).
-   - SI ES CLIENTE PROPIO: Dile que lo deje desactivado.
+A) TOGGLE "Aplicar límite legal (Art 394.3 LEC)": 
+   - SI ES "JURA DE CUENTAS" O "PRESUPUESTO":
+     >>> INSTRUCCIÓN: Dile IMPERATIVAMENTE que lo DESACTIVE. (Razón: En la relación abogado-cliente rige la libertad de precios y no aplica el límite de costas procesales).
+   
+   - SI ES "TASACIÓN DE COSTAS" (Paga el contrario):
+     >>> REGLA GENERAL: Dile que lo ACTIVE (Límite 1/3 de la cuantía).
+     >>> EXCEPCIÓN CRÍTICA 1 (TEMERIDAD): Si el usuario menciona "Temeridad", "Mala Fe" o "se declaró la temeridad", el límite legal DESAPARECE. Dile explícitamente que DESACTIVE el checkbox para cobrar el 100%.
+     >>> EXCEPCIÓN CRÍTICA 2 (CONTENCIOSO-ADMINISTRATIVO): Advierte que si la sentencia fija una cifra tope (ej. "máximo 2.000€"), ese es el límite real (Art. 139 LJCA), independientemente de la escala.
 
 B) TOGGLE "IVA":
-   - Recordar que si el cliente es consumidor final, debe estar activo.
+   - SI ES "JURA DE CUENTAS" O "PRESUPUESTO":
+     >>> INSTRUCCIÓN: Dile que lo ACTIVE SIEMPRE. (El abogado siempre factura IVA a su propio cliente por sus servicios).
 
-REGLAS DE CUANTÍA:
+   - SI ES "TASACIÓN DE COSTAS" (Paga el contrario):
+     >>> REGLA PARTICULAR: Si el cliente (beneficiario) es PARTICULAR/CONSUMIDOR, dile que lo ACTIVE.
+     >>> REGLA EMPRESA: Si el cliente es EMPRESA/S.L./S.A., dile que lo DESACTIVE. (Razón: Evitar enriquecimiento injusto por deducción del impuesto).
+
+     REGLAS DE CUANTÍA:
 - Indeterminada: Dile que ponga 18.000€ (Criterio 1).
 - Desahucio: 1 Anualidad de Renta.
 `;
