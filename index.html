@@ -183,14 +183,13 @@
             };
 
             return (
-                <div className="flex flex-col h-full w-full bg-white border-l border-slate-200 shadow-xl">
+                <div className="relative flex flex-col h-[calc(100%-2rem)] bg-white m-4 rounded-xl shadow-lg border border-slate-200 overflow-hidden">
                     <div className="bg-slate-800 text-white p-4 border-b border-slate-700 flex justify-between items-center">
                         <h3 className="font-bold text-sm flex items-center">
-                            <i className="fas fa-robot mr-2 text-blue-400"></i> Copiloto Jurídico
+                            <i className="fas fa-robot mr-2 text-blue-400"></i> Asistente Honorarios
                         </h3>
-                        <i className="fas fa-info-circle text-slate-400"></i>
                     </div>
-                    <div className="flex-1 overflow-y-auto p-4 bg-slate-50 space-y-4">
+                    <div className="flex-1 overflow-y-auto p-4 pb-40 bg-slate-50 space-y-4">
                                 {messages.map((msg, idx) => (
                                     <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                                         <div className={`chat-bubble ${msg.role === 'user' ? 'chat-user shadow-md' : 'chat-ai shadow-sm markdown-chat'}`}>
@@ -201,9 +200,29 @@
                                 {isLoading && <div className="flex justify-start"><div className="bg-white p-3 rounded-2xl rounded-bl-none shadow-sm flex gap-1"><div className="typing-dot"></div><div className="typing-dot"></div><div className="typing-dot"></div></div></div>}
                                 <div ref={messagesEndRef} />
                             </div>
-                    <form onSubmit={handleSend} className="p-4 bg-white border-t border-slate-200 relative">
-                        <input type="text" value={inputValue} onChange={(e) => setInputValue(e.target.value)} placeholder="Consulta tu caso..." className="w-full pl-4 pr-10 py-3 bg-slate-100 border-none rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none" />
-                        <button type="submit" disabled={!inputValue.trim() || isLoading} className="absolute right-7 top-7 text-blue-600"><i className="fas fa-paper-plane"></i></button>
+                    <form onSubmit={handleSend} className="absolute bottom-0 left-0 w-full p-5 bg-slate-100 border-t border-slate-200 z-10">
+                        <div className="relative">
+                            <textarea 
+                                value={inputValue} 
+                                onChange={(e) => setInputValue(e.target.value)} 
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter' && !e.shiftKey) {
+                                        e.preventDefault();
+                                        handleSend(e);
+                                    }
+                                }}
+                                placeholder="Describe tu caso aquí con todo detalle..." 
+                                rows="3"
+                                className="w-full pl-4 pr-14 py-3 bg-white border-2 border-slate-400 rounded-xl text-slate-800 placeholder-slate-500 focus:outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-100 transition-all shadow-lg resize-none text-sm leading-relaxed" 
+                            />
+                            <button 
+                                type="submit" 
+                                disabled={!inputValue.trim() || isLoading} 
+                                className="absolute right-3 bottom-3 p-2 w-10 h-10 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-md transition-all flex items-center justify-center"
+                            >
+                                <i className="fas fa-paper-plane text-lg"></i>
+                            </button>
+                        </div>
                     </form>
                 </div>
             );
@@ -314,7 +333,7 @@
                 // CASO 2: Tasación de Costas (Paga la contraria)
                 if (calculationMode === 'COSTAS') {
                     if (beneficiaryType === 'LEGAL') {
-                        return "IVA excluido automáticamente por normativa mercantil/fiscal.";
+                        return "IVA excluido: Según doctrina del TS, el IVA no es gasto necesario si el vencedor puede deducirlo íntegramente.";
                     } else {
                         return "IVA Incluido (Beneficiario particular / consumidor final)";
                     }
@@ -361,12 +380,15 @@
             if (!isAuthenticated) return <LoginScreen onLogin={() => setIsAuthenticated(true)} />;
 
             return (
-                <div className="flex h-screen overflow-hidden bg-slate-100 fade-in">
-                    {/* COLUMNA IZQUIERDA: CALCULADORA Y DESGLOSE */}
-                    <div className="w-full lg:w-2/3 overflow-y-auto p-4 lg:p-8">
-                        <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="flex h-screen bg-slate-50 overflow-hidden fade-in">
+                    {/* COLUMNA IZQUIERDA: WORKSPACE */}
+                    <div className="flex-1 h-full overflow-y-auto p-4 lg:p-8 scroll-smooth">
+                        <div className="max-w-7xl mx-auto space-y-6">
                         
-                            <div className="bg-white p-6 rounded-xl shadow-lg border-t-4 border-blue-600">
+                            {/* FILA SUPERIOR: CALCULADORA Y REGLAS */}
+                            <div className="grid grid-cols-1 2xl:grid-cols-2 gap-6 items-start">
+                                {/* 1. CALCULADORA */}
+                                <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
                                 <h1 className="font-extrabold text-slate-800 text-lg uppercase mb-4">Calculadora Honorarios DBS</h1>
                                 
                                 {/* 0. CONFIGURACIÓN GLOBAL (PROTECCIÓN FISCAL) */}
@@ -448,18 +470,17 @@
                                 </div>
                             </div>
 
-                            {/* 3. REGLAS ESPECIALES */}
-                            <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
+                                {/* 2. REGLAS ESPECIALES */}
+                                <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 h-full">
                                 <h2 className="text-sm font-bold text-slate-800 uppercase mb-4 border-b pb-2 flex items-center">
-                                    <span className="bg-slate-200 text-slate-600 rounded-full w-5 h-5 flex items-center justify-center text-xs mr-2">3</span>
-                                    Reglas Especiales
+                                    Ajustes Legales
                                 </h2>
                                 <div className="space-y-4">
                                     <div className="flex items-center justify-between">
                                         <span className="text-xs font-bold text-slate-600">Límite legal (Art. 394.3 LEC)</span>
                                         <label className="relative inline-flex items-center cursor-pointer">
                                             <input type="checkbox" className="sr-only" checked={applyLimit394} onChange={() => setApplyLimit394(!applyLimit394)} />
-                                            <div className={`w-10 h-6 rounded-full p-1 transition-colors ${applyLimit394 ? 'bg-orange-500' : 'bg-slate-300'}`}>
+                                            <div className={`w-10 h-6 rounded-full p-1 transition-colors ${applyLimit394 ? 'bg-blue-600' : 'bg-slate-300'}`}>
                                                 <div className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform ${applyLimit394 ? 'translate-x-4' : ''}`}></div>
                                             </div>
                                         </label>
@@ -479,17 +500,18 @@
                                     </button>
                                 </div>
                             </div>
-                        </div>
+                            </div>
 
-                        <div className="space-y-6">
+                            {/* FILA INFERIOR: DESGLOSE */}
+                            <div className="space-y-6">
                             {/* LISTA CONCEPTOS */}
-                            <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 min-h-[200px]">
+                            <div className="bg-white p-6 rounded-xl shadow-md border-2 border-slate-300 min-h-[300px]">
                                 <h2 className="text-xs font-bold text-slate-400 uppercase mb-4 tracking-wider">Desglose del Expediente</h2>
                                 
                                 {concepts.length === 0 ? (
-                                    <div className="text-center py-10 text-slate-400 border-2 border-dashed border-slate-200 rounded-lg">
-                                        <i className="fas fa-calculator text-3xl mb-2 opacity-50"></i>
-                                        <p className="text-sm">Añade conceptos desde el panel izquierdo</p>
+                                    <div className="text-center py-12 text-slate-400 border-4 border-dashed border-slate-200 rounded-xl">
+                                        <i className="fas fa-calculator text-5xl mb-4 opacity-50"></i>
+                                        <p className="text-lg text-slate-500 font-medium">Configura los parámetros y pulsa 'Añadir Concepto' para comenzar el cálculo.</p>
                                     </div>
                                 ) : (
                                     <div className="space-y-2">
@@ -537,16 +559,20 @@
                                                 <span>{vatAmount.toLocaleString('es-ES', {minimumFractionDigits: 2})} €</span>
                                             </div>
                                         )}
-                                        <div className="flex justify-between text-blue-300 font-extrabold text-2xl mt-2 pt-2 border-t-2 border-slate-700">
+                                        <div className="flex justify-between bg-blue-600 text-white font-extrabold text-2xl mt-4 p-4 rounded-lg shadow-md">
                                             <span>TOTAL:</span>
                                             <span>{grandTotal.toLocaleString('es-ES', {minimumFractionDigits: 2})} €</span>
                                         </div>
                                     </div>
                                 </div>
                             )}
-                            
-                            <ChatFloating />
+                            </div>
                         </div>
+                    </div>
+
+                    {/* COLUMNA DERECHA: CHAT SIDEBAR */}
+                    <div className="hidden lg:flex w-[400px] xl:w-[450px] h-full bg-white border-l border-slate-200 shadow-xl z-20 relative">
+                        <ChatSidebar />
                     </div>
                 </div>
             );
