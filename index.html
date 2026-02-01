@@ -192,7 +192,7 @@
                         </h3>
                         {/* Botón cerrar solo visible en móvil */}
                         <button onClick={onClose} className="lg:hidden text-white hover:text-slate-300 transition-colors">
-                            <i className="fas fa-times text-lg"></i>
+                            <i className="fas fa-minus text-lg"></i>
                         </button>
                     </div>
                     <div className="flex-1 overflow-y-auto p-4 pb-40 bg-slate-50 space-y-4">
@@ -480,11 +480,11 @@
                                                 </div>
                                             </label>
                                             {manualIVA ? (
-                                            <span className="text-sm text-green-600 font-medium animate-fade-in">
+                                            <span className="text-sm text-green-600 font-medium animate-fade-in hidden lg:inline">
                                                 <i className="fas fa-check-circle mr-1"></i> (Beneficiario particular / consumidor final)
                                             </span>
                                         ) : (
-                                            <span className="text-xs text-slate-700 font-medium leading-tight animate-fade-in">
+                                            <span className="text-xs text-slate-700 font-medium leading-tight animate-fade-in hidden lg:inline">
                                                 <i className="fas fa-info-circle mr-1"></i> (Beneficiario empresa) Según doctrina del TS, el IVA no es gasto necesario si el vencedor puede deducirlo íntegramente.
                                             </span>
                                         )}
