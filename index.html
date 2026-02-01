@@ -159,9 +159,8 @@
             };
         }
 
-        // --- CHAT COMPONENT ---
-        function ChatFloating() {
-            const [isOpen, setIsOpen] = useState(false);
+        // --- CHAT SIDEBAR (COPILOTO) ---
+        function ChatSidebar() {
             const [messages, setMessages] = useState([
                 { role: 'model', content: 'Hola, soy tu Asistente de Honorarios. ¿En qué te puedo ayudar? (Ej: "Tengo un desahucio con oposición de 600€ de renta")' }
             ]);
@@ -169,7 +168,7 @@
             const [isLoading, setIsLoading] = useState(false);
             const messagesEndRef = useRef(null);
 
-            useEffect(() => { if (isOpen) messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages, isOpen]);
+            useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
 
             const handleSend = async (e) => {
                 e.preventDefault();
@@ -184,18 +183,14 @@
             };
 
             return (
-                <>
-                    <button onClick={() => setIsOpen(!isOpen)} className="chat-fab">
-                        <i className="fas fa-comment-dots text-xl"></i>
-                        <span className="font-bold text-sm">Asistente Jurídico</span>
-                    </button>
-                    {isOpen && (
-                        <div className="chat-window">
-                            <div className="bg-slate-800 text-white p-3 border-b border-slate-700 flex justify-between items-center">
-                                <h3 className="font-bold text-sm flex items-center"><i className="fas fa-robot mr-2 text-blue-400"></i> Asistente IA</h3>
-                                <button onClick={() => setIsOpen(false)} className="hover:text-blue-300 transition"><i className="fas fa-minus"></i></button>
-                            </div>
-                            <div className="flex-1 overflow-y-auto p-4 bg-slate-50 space-y-3">
+                <div className="flex flex-col h-full w-full bg-white border-l border-slate-200 shadow-xl">
+                    <div className="bg-slate-800 text-white p-4 border-b border-slate-700 flex justify-between items-center">
+                        <h3 className="font-bold text-sm flex items-center">
+                            <i className="fas fa-robot mr-2 text-blue-400"></i> Copiloto Jurídico
+                        </h3>
+                        <i className="fas fa-info-circle text-slate-400"></i>
+                    </div>
+                    <div className="flex-1 overflow-y-auto p-4 bg-slate-50 space-y-4">
                                 {messages.map((msg, idx) => (
                                     <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                                         <div className={`chat-bubble ${msg.role === 'user' ? 'chat-user shadow-md' : 'chat-ai shadow-sm markdown-chat'}`}>
@@ -206,25 +201,33 @@
                                 {isLoading && <div className="flex justify-start"><div className="bg-white p-3 rounded-2xl rounded-bl-none shadow-sm flex gap-1"><div className="typing-dot"></div><div className="typing-dot"></div><div className="typing-dot"></div></div></div>}
                                 <div ref={messagesEndRef} />
                             </div>
-                            <form onSubmit={handleSend} className="p-3 bg-white border-t border-slate-200 relative">
-                                <input type="text" value={inputValue} onChange={(e) => setInputValue(e.target.value)} placeholder="Consulta tu caso..." className="w-full pl-4 pr-10 py-2.5 bg-slate-100 border-none rounded-full text-xs focus:ring-2 focus:ring-blue-500 outline-none" />
-                                <button type="submit" disabled={!inputValue.trim() || isLoading} className="absolute right-4 top-4 text-blue-600"><i className="fas fa-paper-plane"></i></button>
-                            </form>
-                        </div>
-                    )}
-                </>
+                    <form onSubmit={handleSend} className="p-4 bg-white border-t border-slate-200 relative">
+                        <input type="text" value={inputValue} onChange={(e) => setInputValue(e.target.value)} placeholder="Consulta tu caso..." className="w-full pl-4 pr-10 py-3 bg-slate-100 border-none rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none" />
+                        <button type="submit" disabled={!inputValue.trim() || isLoading} className="absolute right-7 top-7 text-blue-600"><i className="fas fa-paper-plane"></i></button>
+                    </form>
+                </div>
             );
         }
 
         // --- LOGIN ---
         function LoginScreen({ onLogin }) {
             const [password, setPassword] = useState("");
-            const handleSubmit = (e) => { e.preventDefault(); if (password === "DBS26") onLogin(); };
+            const [error, setError] = useState(false);
+            const handleSubmit = (e) => { 
+                e.preventDefault(); 
+                if (password === "DBS26") {
+                    onLogin(); 
+                } else {
+                    setError(true);
+                    setPassword("");
+                }
+            };
             return (
                 <div className="min-h-screen flex items-center justify-center bg-slate-100 p-4">
                     <form onSubmit={handleSubmit} className="bg-white p-8 rounded-2xl shadow-xl w-full max-w-sm text-center">
                         <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6 text-blue-600 text-2xl"><i className="fas fa-lock"></i></div>
-                        <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Contraseña" className="w-full p-3 mb-4 rounded-lg border text-center font-mono focus:ring-2 focus:ring-blue-500" />
+                        <input type="password" value={password} onChange={(e) => { setPassword(e.target.value); setError(false); }} placeholder="Contraseña" className={`w-full p-3 mb-2 rounded-lg border text-center font-mono focus:ring-2 focus:ring-blue-500 ${error ? 'border-red-500' : 'border-slate-300'}`} />
+                        {error && <p className="text-red-500 text-xs font-bold mb-4">Contraseña incorrecta. Inténtelo de nuevo.</p>}
                         <button type="submit" className="w-full bg-blue-600 text-white font-bold py-3 rounded-lg">Entrar</button>
                     </form>
                 </div>
@@ -311,7 +314,7 @@
                 // CASO 2: Tasación de Costas (Paga la contraria)
                 if (calculationMode === 'COSTAS') {
                     if (beneficiaryType === 'LEGAL') {
-                        return "IVA Excluido (Beneficiario es sociedad mercantil con derecho a deducción)";
+                        return "IVA excluido automáticamente por normativa mercantil/fiscal.";
                     } else {
                         return "IVA Incluido (Beneficiario particular / consumidor final)";
                     }
@@ -358,11 +361,11 @@
             if (!isAuthenticated) return <LoginScreen onLogin={() => setIsAuthenticated(true)} />;
 
             return (
-                <div className="flex justify-center p-4 min-h-screen pb-20 fade-in">
-                    <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <div className="flex h-screen overflow-hidden bg-slate-100 fade-in">
+                    {/* COLUMNA IZQUIERDA: CALCULADORA Y DESGLOSE */}
+                    <div className="w-full lg:w-2/3 overflow-y-auto p-4 lg:p-8">
+                        <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-6">
                         
-                        {/* LEFT: FORMULARIO */}
-                        <div className="lg:col-span-5 space-y-6">
                             <div className="bg-white p-6 rounded-xl shadow-lg border-t-4 border-blue-600">
                                 <h1 className="font-extrabold text-slate-800 text-lg uppercase mb-4">Calculadora Honorarios DBS</h1>
                                 
@@ -407,7 +410,7 @@
                                         </div>
                                     )}
 
-                                    <div className={`text-[9px] font-medium px-2 py-1 rounded border flex items-center gap-1.5 ${manualIVA ? 'bg-blue-50 text-blue-600 border-blue-100' : 'bg-purple-50 text-purple-600 border-purple-100'}`}>
+                                    <div className={`text-[9px] font-bold px-2 py-2 rounded border flex items-center gap-1.5 ${manualIVA ? 'bg-blue-50 text-blue-600 border-blue-100' : 'bg-orange-50 text-orange-600 border-orange-100'}`}>
                                         <i className={`fas ${manualIVA ? 'fa-info-circle' : 'fa-shield-halved'}`}></i>
                                         {vatReason}
                                     </div>
@@ -462,7 +465,7 @@
                                         </label>
                                     </div>
                                     <div className="flex items-center justify-between">
-                                        <span className="text-xs font-bold text-slate-600">Aplicar IVA (21%)</span>
+                                        <span className="text-xs font-bold text-slate-600">IVA (21%)</span>
                                         <label className="relative inline-flex items-center cursor-pointer">
                                             <input type="checkbox" className="sr-only" checked={manualIVA} onChange={() => setManualIVA(!manualIVA)} />
                                             <div className={`w-10 h-6 rounded-full p-1 transition-colors ${manualIVA ? 'bg-blue-600' : 'bg-slate-300'}`}>
@@ -478,8 +481,7 @@
                             </div>
                         </div>
 
-                        {/* RIGHT: RESULTADOS */}
-                        <div className="lg:col-span-7 space-y-6">
+                        <div className="space-y-6">
                             {/* LISTA CONCEPTOS */}
                             <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 min-h-[200px]">
                                 <h2 className="text-xs font-bold text-slate-400 uppercase mb-4 tracking-wider">Desglose del Expediente</h2>
